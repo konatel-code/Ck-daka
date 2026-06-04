@@ -50,6 +50,21 @@ const { xml, source, error } = await getXml();
 const tours = normalizeFeed(xml);
 const facets = buildFacets(tours);
 
+// --- DOČASNÁ DIAGNOSTIKA (odstránim po analýze) ---
+if (process.env.DEBUG_FEED === '1') {
+  console.log('===RAW_XML_START===');
+  console.log(xml.slice(0, 2500));
+  console.log('===RAW_XML_END===');
+  console.log('===NORMALIZED_SAMPLE===');
+  console.log(JSON.stringify(tours.slice(0, 5), null, 2));
+  console.log('===PRICE_STATS===');
+  const prices = tours.map((t) => t.price);
+  console.log('priceMin/Max:', facets.priceMin, facets.priceMax);
+  console.log('null ceny:', prices.filter((p) => p == null).length, '/', tours.length);
+  console.log('ukážky priceText:', tours.slice(0, 12).map((t) => t.priceText));
+}
+// --- /DOČASNÁ DIAGNOSTIKA ---
+
 await mkdir(OUT, { recursive: true });
 await cp(join(ROOT, 'public'), OUT, { recursive: true });
 await writeFile(join(OUT, 'tours.json'), JSON.stringify(

@@ -34,6 +34,8 @@ jobs:
 
       - name: Build statickej verzie (stiahne feed alebo použije vzorku)
         run: npm run build:static
+        env:
+          DEBUG_FEED: "1"
 
       - name: Konfigurácia Pages
         # Pozn.: Pages treba v repozitári raz manuálne zapnúť
