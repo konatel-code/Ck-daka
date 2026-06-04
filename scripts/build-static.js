@@ -57,4 +57,15 @@ await writeFile(join(OUT, 'tours.json'), JSON.stringify(
 // .nojekyll, aby GitHub Pages nepreskakoval súbory
 await writeFile(join(OUT, '.nojekyll'), '');
 
+// cache-busting: ku každému buildu pripneme verziu k CSS/JS, aby prehliadač
+// po novej dennej aktualizácii vždy načítal čerstvé súbory (nie staré z cache).
+const stamp = Date.now();
+const idxPath = join(OUT, 'index.html');
+let html = await readFile(idxPath, 'utf8');
+html = html
+  .replace('css/styles.css', `css/styles.css?v=${stamp}`)
+  .replace('js/app.js', `js/app.js?v=${stamp}`)
+  .replace('assets/favicon.png', `assets/favicon.png?v=${stamp}`);
+await writeFile(idxPath, html);
+
 console.log(`✓ Statický build hotový: ${tours.length} zájazdov (zdroj: ${source}) → _site/`);
