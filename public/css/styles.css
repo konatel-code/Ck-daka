@@ -27,6 +27,9 @@
    ========================================================================= */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Atribút hidden musí mať prednosť pred display z tried (napr. .modal-overlay). */
+[hidden] { display: none !important; }
+
 body {
   font-family: 'Nunito', system-ui, sans-serif;
   color: var(--ink);
