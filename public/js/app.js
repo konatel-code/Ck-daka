@@ -160,19 +160,40 @@ const MUSTHAVE_RULES = {
   vylety:   /výlet|vylet|poznavac|sprievodca|okruh|pamiatk|galér|galer|histór|histor/,
 };
 
-// ── VTIPNÉ HLÁŠKY ────────────────────────────────────────────────────────────
-const QUIPS = {
-  more: ['More volá a ty musíš ísť. 🌊', 'Plavky už balíš, však? 🩱', 'Piesok všade. Ale stojí to za to. 🏖️'],
-  exotika: ['Pas po ruke, dobrodružstvo čaká! 🛂', 'Toto bude story na celý rok. 🐠', 'Palmy, koktail, ty. ✅'],
-  hory: ['Čerstvý vzduch a žiadny signál – paráda. 🏔️', 'Nohy ťa potom budú nenávidieť (v dobrom). 🥾', 'Výhľady ako z plagátu. 📸'],
-  mesto: ['Kávička, galéria, fotka pri pamiatke. 📷', 'Krok-meter dnes nestíha. 🚶', 'Kultúra a dobré jedlo v jednom. 🍝'],
-  wellness: ['Relax level: maximum. 💆', 'Telefón vypni, vaňu napusti. 🛁', 'Toto si zaslúžiš. ✨'],
-  eurovikend: ['Tri dni, kopa zážitkov. ⚡', 'Ideálny útek z reality. 🏙️'],
-  exotika_lux: ['Toto nie je dovolenka, to je životná udalosť. 💍'],
-  cheap: ['A do peňaženky to ani nebolí. 💸'],
-  perfect: ['Toto sadlo ako uliate! 🎯', 'Skoro akoby sme to vyrobili pre teba. ✨'],
-  default: ['Toto by mohlo sadnúť! 👌', 'Solídna voľba. 🌟', 'Pekný kúsok z ponuky. 🧳'],
-};
+// ── DÁTOVO-RIADENÁ HLÁŠKA (unikátna pre každý zájazd) ────────────────────────
+// Vtipný „chvost" vyberáme deterministicky podľa ID, hlavná časť sa skladá
+// z konkrétnych údajov (miesto, noci, cena, zľava), takže výsledok je unikátny.
+const TAILS = [
+  'ber a nerieš 😎', 'toto chce fotku 📸', 'kufre von 🧳', 'ideš? 🙌',
+  'dovolenka volá ☎️', 'a je vymaľované 🎨', 'klik a si tam ✈️', 'paráda 🌟',
+  'toto poteší 😊', 'žiadne výhovorky 💪', 'sadni a leť 🛫', 'super tip 👌',
+  'pohoda istá 🛋️', 'zaslúžiš si to ✨', 'leto v kapse ☀️', 'go go go 🏁',
+];
+
+function hashId(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function placeOf(tour) {
+  return [...new Set([tour.destination, tour.region, tour.country].filter(Boolean))].join(', ');
+}
+function nocSlovo(n) { return n === 1 ? 'noc' : (n >= 2 && n <= 4 ? 'noci' : 'nocí'); }
+function fmtPrice(p) { return Number(p).toLocaleString('sk-SK'); }
+
+function tourTagline(tour) {
+  const place = tour.destination || tour.country || '';
+  const n = tour.nights;
+  const nightsTxt = n == null ? '' : (n === 0 ? 'jednodňovka' : `${n} ${nocSlovo(n)}`);
+  const priceTxt = tour.price != null ? `od ${fmtPrice(tour.price)} €` : '';
+  const emoji = { more: '🏖️', exotika: '🌴', hory: '⛰️', mesto: '🏛️', wellness: '💆', eurovikend: '⚡', ine: '🧳' }[tour.type] || '🧳';
+
+  const head = [place, nightsTxt, priceTxt].filter(Boolean).join(' · ');
+  const disc = tour.discount && tour.discount > 0 ? ` · zľava −${tour.discount}%` : '';
+  const tail = TAILS[hashId(String(tour.id) + tour.type) % TAILS.length];
+  return `${emoji} ${head}${disc} — ${tail}`;
+}
 
 const TYPE_LABELS = {
   more: '🏖️ More', exotika: '🌴 Exotika', hory: '⛰️ Hory',
@@ -332,14 +353,6 @@ function scoreTour(tour, a) {
   const got = dims.reduce((s, d) => s + d.w * d.f, 0);
   return Math.round((got / wSum) * 100);
 }
-
-function quipFor(tour, score) {
-  if (score != null && score >= 90) return pick(QUIPS.perfect);
-  if (tour.type === 'exotika' && (tour.price || 0) > 1200) return pick(QUIPS.exotika_lux);
-  if ((tour.price || 9999) < 280) return pick(QUIPS.cheap);
-  return pick(QUIPS[tour.type] || QUIPS.default);
-}
-function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
 // =========================================================================
 //  SPRIEVODCA
@@ -501,13 +514,16 @@ function renderCard(tour, score) {
   const el = document.createElement('article');
   el.className = 'tour-card card';
   const img = tour.image || `https://picsum.photos/seed/${encodeURIComponent(tour.id)}/640/420`;
-  const priceHtml = typeof tour.price === 'number' ? `${tour.price}&nbsp;€ <small>/os.</small>` : (tour.priceText || 'na dopyt');
+  const priceHtml = typeof tour.price === 'number'
+    ? `${tour.priceFrom ? 'od ' : ''}${fmtPrice(tour.price)}&nbsp;€ <small>/os.</small>`
+    : 'cena na dopyt';
   const matchBadge = score != null ? `<span class="tc-match">${score}% zhoda</span>` : '';
 
   const meta = [];
   if (tour.transport && TRANSPORT_LABELS[tour.transport]) meta.push(TRANSPORT_LABELS[tour.transport]);
-  if (tour.nights) meta.push(`🌙 ${tour.nights} ${tour.nights === 1 ? 'noc' : tour.nights < 5 ? 'noci' : 'nocí'}`);
+  if (tour.nights != null) meta.push(tour.nights === 0 ? '🗓️ 1 deň' : `🌙 ${tour.nights} ${nocSlovo(tour.nights)}`);
   if (tour.board) meta.push(`🍽️ ${tour.board}`);
+  if (tour.discount && tour.discount > 0) meta.push(`🔖 −${tour.discount}%`);
 
   el.innerHTML = `
     <div class="tc-img" style="background-image:url('${img}')">
@@ -516,8 +532,8 @@ function renderCard(tour, score) {
     </div>
     <div class="tc-body">
       <div class="tc-title">${escapeHtml(tour.title)}</div>
-      <div class="tc-place">📍 ${escapeHtml([tour.destination, tour.country].filter(Boolean).join(', ')) || '—'}</div>
-      ${score != null ? `<div class="tc-quip">${quipFor(tour, score)}</div>` : ''}
+      <div class="tc-place">📍 ${escapeHtml(placeOf(tour)) || '—'}</div>
+      ${score != null ? `<div class="tc-quip">${escapeHtml(tourTagline(tour))}</div>` : ''}
       <div class="tc-meta">${meta.map((m) => `<span class="chip">${m}</span>`).join('')}</div>
       <div class="tc-foot">
         <span class="tc-price">${priceHtml}</span>
@@ -535,15 +551,19 @@ function openModal(tour, score) {
   const overlay = document.getElementById('modalOverlay');
   const modal = document.getElementById('modal');
   const img = tour.image || `https://picsum.photos/seed/${encodeURIComponent(tour.id)}/800/450`;
-  const term = (tour.dateFrom && tour.dateTo) ? `${fmtDate(tour.dateFrom)} – ${fmtDate(tour.dateTo)}` : (tour.dateFrom ? fmtDate(tour.dateFrom) : '');
+  const term = (tour.dateFrom && tour.dateTo && tour.dateFrom !== tour.dateTo)
+    ? `${fmtDate(tour.dateFrom)} – ${fmtDate(tour.dateTo)}`
+    : (tour.dateFrom ? fmtDate(tour.dateFrom) : '');
 
   const chips = [];
   if (tour.type) chips.push(TYPE_LABELS[tour.type] || tour.type);
   if (tour.transport && TRANSPORT_LABELS[tour.transport]) chips.push(TRANSPORT_LABELS[tour.transport]);
-  if (tour.nights) chips.push(`🌙 ${tour.nights} nocí`);
+  if (tour.nights != null) chips.push(tour.nights === 0 ? '🗓️ 1 deň' : `🌙 ${tour.nights} ${nocSlovo(tour.nights)}`);
   if (tour.board) chips.push(`🍽️ ${tour.board}`);
   if (tour.accommodation) chips.push(`🏨 ${tour.accommodation}`);
   if (term) chips.push(`📅 ${term}`);
+  if (tour.termsCount > 1) chips.push(`📆 ${tour.termsCount} termínov`);
+  if (tour.discount && tour.discount > 0) chips.push(`🔖 zľava −${tour.discount}%`);
 
   modal.innerHTML = `
     <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" />
@@ -551,11 +571,11 @@ function openModal(tour, score) {
       <button class="btn btn-ghost" id="closeModal" style="float:right">✕</button>
       ${score != null ? `<span class="tc-match" style="position:static;display:inline-block;margin-bottom:8px">${score}% zhoda s tvojím zadaním</span>` : ''}
       <h3>${escapeHtml(tour.title)}</h3>
-      <div class="tc-place">📍 ${escapeHtml([tour.destination, tour.region, tour.country].filter(Boolean).join(', ')) || '—'}</div>
+      <div class="tc-place">📍 ${escapeHtml(placeOf(tour)) || '—'}</div>
       <div class="modal-row">${chips.map((c) => `<span class="chip">${escapeHtml(String(c))}</span>`).join('')}</div>
       <p class="modal-desc">${escapeHtml(tour.description || 'Detailný popis nájdeš na stránke zájazdu.')}</p>
       <div class="modal-foot">
-        <span class="tc-price">${typeof tour.price === 'number' ? tour.price + ' € /os.' : (tour.priceText || 'cena na dopyt')}</span>
+        <span class="tc-price">${typeof tour.price === 'number' ? (tour.priceFrom ? 'od ' : '') + fmtPrice(tour.price) + ' € /os.' : 'cena na dopyt'}</span>
         ${tour.url ? `<a class="btn btn-primary btn-lg" href="${tour.url}" target="_blank" rel="noopener">Mám záujem ↗</a>` : ''}
       </div>
     </div>`;

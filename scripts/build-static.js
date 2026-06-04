@@ -50,21 +50,6 @@ const { xml, source, error } = await getXml();
 const tours = normalizeFeed(xml);
 const facets = buildFacets(tours);
 
-// --- DOČASNÁ DIAGNOSTIKA (odstránim po analýze) ---
-if (process.env.DEBUG_FEED === '1') {
-  const { parseXml } = await import('../src/normalizer.js');
-  const parsed = parseXml(xml);
-  const items = parsed?.SHOP?.SHOPITEM || [];
-  const first = Array.isArray(items) ? items[0] : items;
-  console.log('===ITEM_FIELDS===');
-  for (const [k, v] of Object.entries(first || {})) {
-    const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
-    console.log(`FIELD ${k} = ${s.slice(0, 140)}`);
-  }
-  console.log('===/ITEM_FIELDS===');
-}
-// --- /DOČASNÁ DIAGNOSTIKA ---
-
 await mkdir(OUT, { recursive: true });
 await cp(join(ROOT, 'public'), OUT, { recursive: true });
 await writeFile(join(OUT, 'tours.json'), JSON.stringify(
