@@ -441,10 +441,15 @@ function scrollWizardTop() {
 function nextStep() { if (state.step < STEPS.length - 1) { state.step++; renderStep(); scrollWizardTop(); } else finishQuiz(); }
 function prevStep() { if (state.step > 0) { state.step--; renderStep(); scrollWizardTop(); } }
 
+// Zabráni „ghost clicku" na mobile: tesne po vykreslení výsledkov ignorujeme
+// kliknutia na karty, aby sa hneď neotvoril detál (dotyk z poslednej voľby).
+let cardClickGuardUntil = 0;
+
 function finishQuiz() {
   document.getElementById('progressBar').style.width = '100%';
   state.mode = 'quiz';
   document.getElementById('wizard').hidden = true;
+  cardClickGuardUntil = Date.now() + 700;
   showResults();
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
 }
@@ -549,7 +554,10 @@ function renderCard(tour, score) {
         <span class="btn btn-primary" style="padding:8px 16px;font-size:.9rem">Detail</span>
       </div>
     </div>`;
-  el.addEventListener('click', () => openModal(tour, score));
+  el.addEventListener('click', () => {
+    if (Date.now() < cardClickGuardUntil) return; // ignoruj „ghost click" po výsledkoch
+    openModal(tour, score);
+  });
   return el;
 }
 

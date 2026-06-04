@@ -85,6 +85,8 @@ h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
   position: sticky; top: 0; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
+.brand-link { display: inline-flex; align-items: center; transition: opacity .15s ease; }
+.brand-link:hover { opacity: .8; }
 .brand-img { height: 42px; width: auto; display: block; }
 .brand-logo { font-size: 1.7rem; }
 .brand-name { font-size: 1.45rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
