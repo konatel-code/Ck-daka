@@ -12,23 +12,38 @@ const ROOT = join(__dirname, '..');
 const OUT = join(ROOT, '_site');
 const FEED_URL = process.env.DAKA_FEED_URL || 'https://www.ckdaka.sk/export/xml';
 
-async function getXml() {
+async function fetchOnce(timeoutMs) {
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 25000);
     const res = await fetch(FEED_URL, {
       signal: ctrl.signal,
       headers: { 'User-Agent': 'CKDaka-Vyber/1.0', Accept: 'application/xml, text/xml, */*' },
     });
-    clearTimeout(to);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    console.log('✓ Feed stiahnutý naživo z', FEED_URL);
-    return { xml: await res.text(), source: 'live', error: null };
-  } catch (e) {
-    console.warn('⚠ Živý feed nedostupný (' + (e.message || e) + ') – použijem ukážkové dáta.');
-    const xml = await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8');
-    return { xml, source: 'sample', error: String(e.message || e) };
+    return await res.text();
+  } finally {
+    clearTimeout(to);
   }
+}
+
+async function getXml() {
+  const attempts = 4;
+  let lastErr;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      const xml = await fetchOnce(45000);
+      console.log(`✓ Feed stiahnutý naživo z ${FEED_URL} (pokus ${i})`);
+      return { xml, source: 'live', error: null };
+    } catch (e) {
+      lastErr = e;
+      console.warn(`⚠ Pokus ${i}/${attempts} zlyhal: ${e.message || e}`);
+      if (i < attempts) await new Promise((r) => setTimeout(r, i * 3000));
+    }
+  }
+  console.warn('⚠ Živý feed nedostupný – použijem ukážkové dáta.');
+  const xml = await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8');
+  return { xml, source: 'sample', error: String(lastErr?.message || lastErr) };
 }
 
 const { xml, source, error } = await getXml();
