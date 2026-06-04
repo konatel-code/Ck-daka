@@ -6,6 +6,12 @@
   <title>CK DAKA – Nájdi si svoj zájazd 🌍</title>
   <meta name="description" content="Hravý sprievodca výberom dovolenky CK DAKA. Povedz nám, po čom túžiš, a my ti nájdeme presne ten správny zájazd." />
   <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <!-- OG / zdieľanie -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="CK DAKA – Nájdi si svoj zájazd" />
+  <meta property="og:description" content="Odpovedz na pár otázok a vyberieme ti zájazd presne na mieru z aktuálnej ponuky CK DAKA." />
+  <meta property="og:image" content="assets/logo.png" />
+  <meta name="twitter:card" content="summary" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -15,7 +21,7 @@
   <!-- ŠTÍT / HLAVIČKA -->
   <header class="topbar">
     <div class="brand">
-      <a class="brand-link" href="https://www.ckdaka.sk" title="Prejsť na hlavnú stránku CK DAKA">
+      <a class="brand-link" id="homeLink" href="./" title="Späť na úvod pomocníka">
         <img class="brand-img" src="assets/logo.png" alt="CK DAKA – cestovná kancelária" />
       </a>
     </div>
@@ -37,6 +43,15 @@
   </section>
 
   <main class="container">
+    <!-- AKCIE / LAST MINUTE (úvodná obrazovka) -->
+    <section id="dealsSection">
+      <div class="results-head">
+        <h2>🔥 Akcie a last minute</h2>
+        <button class="btn btn-ghost" id="dealsBrowseBtn">Všetky zájazdy →</button>
+      </div>
+      <div class="cards-grid" id="dealsGrid"></div>
+    </section>
+
     <!-- SPRIEVODCA / KVÍZ -->
     <section class="wizard card" id="wizard" hidden>
       <div class="wizard-head">
@@ -55,6 +70,12 @@
       <div class="results-head">
         <h2 id="resultsTitle">Tvoje zájazdy na mieru</h2>
         <div class="results-actions">
+          <select id="sortSelect" class="sort-select" title="Zoradiť">
+            <option value="">Zoradiť: odporúčané</option>
+            <option value="price">Najlacnejšie</option>
+            <option value="discount">Najväčšia zľava</option>
+            <option value="date">Najbližší termín</option>
+          </select>
           <button class="btn btn-ghost" id="restartBtn">🔄 Skúsiť znova</button>
           <button class="btn btn-ghost" id="toggleFiltersBtn">⚙️ Detailné filtre</button>
         </div>
@@ -119,6 +140,9 @@
   <div class="modal-overlay" id="modalOverlay" hidden>
     <div class="modal card" id="modal" role="dialog" aria-modal="true"></div>
   </div>
+
+  <!-- našepkávač destinácií pre sprievodcu -->
+  <datalist id="destList"></datalist>
 
   <script src="js/app.js"></script>
 </body>
