@@ -698,9 +698,9 @@ function openModal(tour, score) {
       <div class="modal-foot">
         <span class="tc-price">${priceBlock(tour)}</span>
         <span class="modal-actions">
-          <button class="btn btn-ghost" id="shareBtn" title="Skopírovať odkaz na tento zájazd">🔗 Zdieľať</button>
-          <a class="btn btn-primary btn-lg" href="${mailto}">✉️ Mám záujem</a>
-          ${tour.url ? `<a class="btn btn-ghost" href="${tour.url}" target="_blank" rel="noopener">Web ↗</a>` : ''}
+          <button class="btn btn-ghost btn-icon" id="shareBtn" title="Skopírovať odkaz na tento zájazd">🔗</button>
+          <a class="btn btn-ghost" href="${mailto}">Spýtať sa na zájazd</a>
+          ${tour.url ? `<a class="btn btn-primary" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
         </span>
       </div>
     </div>`;
