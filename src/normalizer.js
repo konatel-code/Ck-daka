@@ -239,12 +239,13 @@ export function normalizeFeed(xmlString) {
 
 export function buildFacets(tours) {
   const countries = new Set(), transports = new Set(), types = new Set(), boards = new Set();
-  let priceMin = Infinity, priceMax = 0;
+  let priceMin = Infinity, priceMax = 0, terms = 0;
   for (const t of tours) {
     if (t.country) countries.add(t.country);
     if (t.transport) transports.add(t.transport);
     if (t.type) types.add(t.type);
     if (t.board) boards.add(t.board);
+    terms += t.termsCount || 0;
     if (typeof t.price === 'number') { priceMin = Math.min(priceMin, t.price); priceMax = Math.max(priceMax, t.price); }
   }
   return {
@@ -255,5 +256,6 @@ export function buildFacets(tours) {
     priceMin: priceMin === Infinity ? 0 : Math.floor(priceMin),
     priceMax: Math.ceil(priceMax),
     count: tours.length,
+    terms,
   };
 }

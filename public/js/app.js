@@ -257,26 +257,21 @@ async function loadTours() {
   const data = await fetchData();
   state.tours = data.tours || [];
   state.facets = data.facets || {};
-  updateFeedBadge(data);
+  updateFeedBadge();
   populateFilters();
   const maxP = Math.max(3000, state.facets.priceMax || 0);
   document.getElementById('fPrice').max = Math.ceil(maxP / 50) * 50;
 }
 
-function updateFeedBadge(data) {
+function updateFeedBadge() {
   const badge = document.getElementById('feedBadge');
-  const feedUrlEl = document.getElementById('feedUrl');
-  if (data.feedUrl) feedUrlEl.textContent = data.feedUrl.replace(/^https?:\/\//, '');
   const n = state.tours.length;
-  if (data.source === 'live') {
-    badge.textContent = `● naživo · ${n} zájazdov`; badge.className = 'feed-badge live';
-  } else if (data.source === 'sample') {
-    badge.textContent = `● ukážka · ${n} zájazdov`; badge.className = 'feed-badge sample';
-    badge.title = 'Živý feed nedostupný – zobrazujem ukážkové dáta. ' + (data.error || '');
-  } else {
-    badge.textContent = `${n} zájazdov`; badge.className = 'feed-badge';
-  }
+  const terms = state.facets.terms ?? state.tours.reduce((s, t) => s + (t.termsCount || 0), 0);
+  badge.textContent = `${n} ${plural(n)} · ${terms} ${pluralTermin(terms)}`;
+  badge.className = 'feed-badge';
 }
+
+function pluralTermin(n) { return n === 1 ? 'termín' : (n >= 2 && n <= 4 ? 'termíny' : 'termínov'); }
 
 // =========================================================================
 //  MATCHOVACÍ ALGORITMUS – % zhody zájazdu so zadaním klienta
@@ -646,14 +641,6 @@ function bind() {
     const v = Number(price.value);
     document.getElementById('fPriceLabel').textContent = v >= Number(price.max) ? 'bez limitu' : v + ' €';
     state.mode = 'browse'; renderResults();
-  });
-
-  document.getElementById('refreshBtn').addEventListener('click', async (e) => {
-    e.target.disabled = true; e.target.textContent = '↻ Načítavam…';
-    try { await fetch('api/refresh'); } catch (_) {}
-    await loadTours();
-    if (!document.getElementById('resultsSection').hidden) renderResults();
-    e.target.disabled = false; e.target.textContent = '↻ Obnoviť ponuku';
   });
 
   document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeModal(); });
