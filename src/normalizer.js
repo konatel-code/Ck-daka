@@ -108,6 +108,11 @@ function normalizeShopItem(item) {
   let best = null;
   for (const d of dates) if (!best || d.price < best.price) best = d;
 
+  // všetky termíny pre kalendár v detaile (zoradené podľa dátumu, orezané)
+  const terms = [...dates]
+    .sort((a, b) => String(a.from || '').localeCompare(String(b.from || '')))
+    .slice(0, 40);
+
   let nights = best?.nights ?? null;
   if ((nights == null || nights === 0) && best?.from && best?.to) {
     const diff = Math.round((new Date(best.to) - new Date(best.from)) / 86400000);
@@ -137,6 +142,7 @@ function normalizeShopItem(item) {
     month,
     nights,
     termsCount: dates.length,
+    terms,
     transport: deriveTransport(hay),
     transportRaw: '',
     board: deriveBoard(hay),

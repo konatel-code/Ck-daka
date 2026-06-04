@@ -175,7 +175,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
   transition: transform .15s ease, box-shadow .15s ease;
 }
 .tour-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(10,60,110,.16); }
-.tc-img { position: relative; aspect-ratio: 16/10; background: var(--brand-light) center/cover no-repeat; }
+.tc-img { position: relative; aspect-ratio: 16/10; background: var(--brand-light); overflow: hidden; }
+.tc-thumb { width: 100%; height: 100%; object-fit: cover; display: block; }
 .tc-match {
   position: absolute; top: 12px; left: 12px;
   background: var(--accent); color: #fff; font-weight: 800; font-size: .82rem;
@@ -225,6 +226,34 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
 
 /* prečiarknutá pôvodná cena pri zľave */
 .tc-orig { color: var(--muted); font-weight: 700; font-size: .62em; margin-right: 2px; }
+
+/* triedenie výsledkov */
+.sort-select {
+  font-family: inherit; font-weight: 700; font-size: .95rem; color: var(--ink);
+  padding: 9px 12px; border: 2px solid var(--line); border-radius: 999px; background: #fff; cursor: pointer;
+}
+.sort-select:focus { outline: none; border-color: var(--brand); }
+
+/* vyhľadávanie destinácie v sprievodcovi */
+.search-wrap input {
+  width: 100%; font-family: inherit; font-size: 1.15rem; font-weight: 700; color: var(--ink);
+  padding: 14px 16px; border: 2px solid var(--line); border-radius: var(--radius-sm); background: #fff;
+}
+.search-wrap input:focus { outline: none; border-color: var(--brand); }
+
+/* kalendár termínov v detaile */
+.terms-cal { margin: 4px 0 18px; }
+.terms-cal h4 { font-family: 'Baloo 2'; color: var(--brand); margin-bottom: 8px; }
+.term-list { list-style: none; max-height: 230px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.term-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 9px 12px; font-weight: 600; }
+.term-row:nth-child(odd) { background: var(--brand-light); }
+.term-price { font-weight: 800; color: var(--brand); white-space: nowrap; }
+.term-disc { color: var(--accent-dark); font-weight: 800; }
+
+/* akcie v detaile */
+.modal-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+#dealsSection { margin-top: 26px; }
 
 /* =========================================================================
    MOBILNÁ OPTIMALIZÁCIA

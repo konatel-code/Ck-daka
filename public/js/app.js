@@ -8,6 +8,7 @@ const state = {
   answers: {},      // odpovede zo sprievodcu
   step: 0,
   mode: 'quiz',     // 'quiz' | 'browse'
+  sort: '',         // '' | 'price' | 'discount' | 'date'
 };
 
 // ── REGIÓNY (mapovanie odpovede na krajiny / typ) ───────────────────────────
@@ -46,6 +47,11 @@ const STEPS = [
       { value: 'domace', label: 'Doma a blízko', emoji: '🏡' },
       { value: '', label: 'Je mi to jedno', emoji: '🧭' },
     ],
+  },
+  {
+    key: 'destination', weight: 18, title: 'Máš vysnívanú destináciu?',
+    hint: 'Začni písať krajinu alebo miesto – alebo nechaj prázdne a poradíme my.',
+    type: 'search',
   },
   {
     key: 'who', weight: 8, title: 'S kým vyrážaš?',
@@ -269,8 +275,37 @@ async function loadTours() {
   state.facets = data.facets || {};
   updateFeedBadge();
   populateFilters();
+  fillDestList();
+  renderDeals();
   const maxP = Math.max(3000, state.facets.priceMax || 0);
   document.getElementById('fPrice').max = Math.ceil(maxP / 50) * 50;
+}
+
+// našepkávač destinácií pre sprievodcu
+function fillDestList() {
+  const dl = document.getElementById('destList');
+  if (!dl) return;
+  const places = new Set();
+  for (const t of state.tours) { if (t.country) places.add(t.country); if (t.destination) places.add(t.destination); }
+  dl.innerHTML = [...places].sort((a, b) => a.localeCompare(b, 'sk'))
+    .map((p) => `<option value="${escapeHtml(p)}"></option>`).join('');
+}
+
+// AKCIE / LAST MINUTE – najväčšie zľavy na úvodnej obrazovke
+function renderDeals() {
+  const grid = document.getElementById('dealsGrid');
+  const section = document.getElementById('dealsSection');
+  if (!grid || !section) return;
+  const deals = state.tours
+    .filter((t) => t.discount && t.discount > 0 && typeof t.price === 'number')
+    .sort((a, b) => b.discount - a.discount)
+    .slice(0, 8);
+  // ak feed nemá zľavy, ukáž aspoň najlacnejšie ponuky
+  const list = deals.length ? deals : state.tours
+    .filter((t) => typeof t.price === 'number').sort((a, b) => a.price - b.price).slice(0, 8);
+  grid.innerHTML = '';
+  for (const t of list) grid.appendChild(renderCard(t, null));
+  section.hidden = list.length === 0;
 }
 
 function updateFeedBadge() {
@@ -298,6 +333,12 @@ function scoreTour(tour, a) {
     else if ((a.type === 'more' && tour.type === 'exotika') || (a.type === 'exotika' && tour.type === 'more')) f = 0.5;
     else if ((a.type === 'mesto' && tour.type === 'eurovikend') || (a.type === 'eurovikend' && tour.type === 'mesto')) f = 0.7;
     add('type', 22, f);
+  }
+  // konkrétna destinácia (text z našepkávača) – silná váha
+  if (a.destination && a.destination.trim()) {
+    const q = deburr(a.destination.trim());
+    const hay = deburr([tour.country, tour.destination, tour.title].join(' '));
+    add('destination', 18, hay.includes(q) ? 1 : 0);
   }
   // región
   if (a.region) add('region', 10, regionMatch(tour, a.region) ? 1 : 0);
@@ -362,10 +403,22 @@ function scoreTour(tour, a) {
 // =========================================================================
 //  SPRIEVODCA
 // =========================================================================
+// úvodný (domovský) stav pomocníka – logo naň odkazuje
+function showHome() {
+  state.mode = 'quiz';
+  document.getElementById('wizard').hidden = true;
+  document.getElementById('resultsSection').hidden = true;
+  document.getElementById('filters').hidden = true;
+  document.getElementById('dealsSection').hidden = false;
+  closeModal();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function startQuiz() {
   state.mode = 'quiz';
   state.step = 0;
   state.answers = {};
+  document.getElementById('dealsSection').hidden = true;
   document.getElementById('wizard').hidden = false;
   document.getElementById('resultsSection').hidden = true;
   document.getElementById('filters').hidden = true;
@@ -401,6 +454,13 @@ function renderStep() {
         <input type="range" id="budgetRange" min="0" max="3000" step="50" value="${val}" />
         <div style="display:flex;justify-content:space-between;color:var(--muted);font-weight:700;font-size:.85rem;margin-top:6px">
           <span>0 €</span><span>3000 €+</span></div></div>`;
+  } else if (step.type === 'search') {
+    const val = escapeHtml(state.answers[step.key] || '');
+    html += `<div class="search-wrap">
+        <input type="text" id="destInput" list="destList" autocomplete="off"
+          placeholder="napr. Grécko, Egypt, Tatry…" value="${val}" />
+        <p class="q-hint" style="margin-top:10px">Tip: nechaj prázdne a klikni „Ďalej", ak chceš nechať výber na nás.</p>
+      </div>`;
   }
   body.innerHTML = html;
 
@@ -429,6 +489,10 @@ function renderStep() {
       state.answers.budget = v;
       label.textContent = v === 0 ? 'Bez limitu' : v + ' €';
     });
+  } else if (step.type === 'search') {
+    const input = document.getElementById('destInput');
+    input.addEventListener('input', () => { state.answers[step.key] = input.value; });
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') nextStep(); });
   }
 }
 
@@ -476,31 +540,45 @@ function applyFiltersFromAnswers() {
   document.getElementById('fSearch').value = '';
 }
 
+// zoradenie podľa voľby používateľa (prepíše predvolené poradie)
+function applySort(list) {
+  const sort = state.sort;
+  const num = (v, d) => (typeof v === 'number' ? v : d);
+  if (sort === 'price') list.sort((a, b) => num(a.tour.price, 1e9) - num(b.tour.price, 1e9));
+  else if (sort === 'discount') list.sort((a, b) => num(b.tour.discount, 0) - num(a.tour.discount, 0));
+  else if (sort === 'date') list.sort((a, b) => String(a.tour.dateFrom || '9999').localeCompare(String(b.tour.dateFrom || '9999')));
+  return list;
+}
+
 function computeList() {
+  let list;
   if (state.mode === 'quiz') {
-    return state.tours
+    list = state.tours
       .map((t) => ({ tour: t, score: scoreTour(t, state.answers) }))
       .sort((x, y) => y.score - x.score)
       .filter((x) => x.score >= 30)
       .slice(0, 12);
+  } else {
+    const f = {
+      country: document.getElementById('fCountry').value,
+      type: document.getElementById('fType').value,
+      transport: document.getElementById('fTransport').value,
+      price: Number(document.getElementById('fPrice').value),
+      month: document.getElementById('fMonth').value,
+      search: deburr(document.getElementById('fSearch').value.trim()),
+    };
+    const maxAllowed = Number(document.getElementById('fPrice').max);
+    list = state.tours
+      .filter((t) => !f.country || t.country === f.country)
+      .filter((t) => !f.type || t.type === f.type)
+      .filter((t) => !f.transport || t.transport === f.transport)
+      .filter((t) => f.price >= maxAllowed || typeof t.price !== 'number' || t.price <= f.price)
+      .filter((t) => !f.month || t.month === Number(f.month))
+      .filter((t) => !f.search || deburr(t.title + ' ' + t.description + ' ' + t.destination + ' ' + t.country).includes(f.search))
+      .map((t) => ({ tour: t, score: null }));
   }
-  const f = {
-    country: document.getElementById('fCountry').value,
-    type: document.getElementById('fType').value,
-    transport: document.getElementById('fTransport').value,
-    price: Number(document.getElementById('fPrice').value),
-    month: document.getElementById('fMonth').value,
-    search: deburr(document.getElementById('fSearch').value.trim()),
-  };
-  const maxAllowed = Number(document.getElementById('fPrice').max);
-  return state.tours
-    .filter((t) => !f.country || t.country === f.country)
-    .filter((t) => !f.type || t.type === f.type)
-    .filter((t) => !f.transport || t.transport === f.transport)
-    .filter((t) => f.price >= maxAllowed || typeof t.price !== 'number' || t.price <= f.price)
-    .filter((t) => !f.month || t.month === Number(f.month))
-    .filter((t) => !f.search || deburr(t.title + ' ' + t.description + ' ' + t.destination + ' ' + t.country).includes(f.search))
-    .map((t) => ({ tour: t, score: null }));
+  if (state.sort) applySort(list);
+  return list;
 }
 
 function renderResults() {
@@ -540,7 +618,8 @@ function renderCard(tour, score) {
   if (tour.discount && tour.discount > 0) meta.push(`🔖 −${tour.discount}%`);
 
   el.innerHTML = `
-    <div class="tc-img" style="background-image:url('${img}')">
+    <div class="tc-img">
+      <img class="tc-thumb" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" decoding="async" />
       ${matchBadge}
       <span class="tc-type">${TYPE_LABELS[tour.type] || '🧳 Zájazd'}</span>
     </div>
@@ -578,12 +657,36 @@ function openModal(tour, score) {
   if (tour.nights != null) chips.push(tour.nights === 0 ? '🗓️ 1 deň' : `🌙 ${tour.nights} ${nocSlovo(tour.nights)}`);
   if (tour.board) chips.push(`🍽️ ${tour.board}`);
   if (tour.accommodation) chips.push(`🏨 ${tour.accommodation}`);
-  if (term) chips.push(`📅 ${term}`);
-  if (tour.termsCount > 1) chips.push(`📆 ${tour.termsCount} termínov`);
   if (tour.discount && tour.discount > 0) chips.push(`🔖 zľava −${tour.discount}%`);
 
+  // kalendár termínov (#7)
+  const terms = Array.isArray(tour.terms) ? tour.terms : [];
+  let termsHtml = '';
+  if (terms.length) {
+    const rows = terms.map((t) => {
+      const range = (t.from && t.to && t.from !== t.to) ? `${fmtDate(t.from)} – ${fmtDate(t.to)}` : fmtDate(t.from || t.to);
+      const nights = t.nights ? ` · ${t.nights} ${nocSlovo(t.nights)}` : '';
+      const orig = (t.orig && t.orig > t.price) ? `<s class="tc-orig">${fmtPrice(t.orig)} €</s> ` : '';
+      const disc = (t.discount && t.discount > 0) ? ` <span class="term-disc">−${t.discount}%</span>` : '';
+      return `<li class="term-row"><span>📅 ${range}${nights}</span><span class="term-price">${orig}${fmtPrice(t.price)} €${disc}</span></li>`;
+    }).join('');
+    termsHtml = `<div class="terms-cal"><h4>Dostupné termíny (${terms.length})</h4><ul class="term-list">${rows}</ul></div>`;
+  }
+
+  // predvyplnený dopytový e-mail (#1)
+  const subject = `Záujem o zájazd: ${tour.title} (kód ${tour.id})`;
+  const bodyLines = [
+    'Dobrý deň,', '',
+    `mám záujem o zájazd: ${tour.title} (kód ${tour.id}).`,
+    typeof tour.price === 'number' ? `Cena od ${fmtPrice(tour.price)} € / os.` : '',
+    term ? `Termín: ${term}` : '',
+    tour.url ? `Odkaz: ${tour.url}` : '',
+    '', 'Prosím o viac informácií. Ďakujem.',
+  ].filter(Boolean);
+  const mailto = `mailto:info@ckdaka.sk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
+
   modal.innerHTML = `
-    <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" />
+    <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" />
     <div class="modal-content">
       <button class="btn btn-ghost" id="closeModal" style="float:right">✕</button>
       ${score != null ? `<span class="tc-match" style="position:static;display:inline-block;margin-bottom:8px">${score}% zhoda s tvojím zadaním</span>` : ''}
@@ -591,15 +694,45 @@ function openModal(tour, score) {
       <div class="tc-place">📍 ${escapeHtml(placeOf(tour)) || '—'}</div>
       <div class="modal-row">${chips.map((c) => `<span class="chip">${escapeHtml(String(c))}</span>`).join('')}</div>
       <p class="modal-desc">${escapeHtml(tour.description || 'Detailný popis nájdeš na stránke zájazdu.')}</p>
+      ${termsHtml}
       <div class="modal-foot">
         <span class="tc-price">${priceBlock(tour)}</span>
-        ${tour.url ? `<a class="btn btn-primary btn-lg" href="${tour.url}" target="_blank" rel="noopener">Mám záujem ↗</a>` : ''}
+        <span class="modal-actions">
+          <button class="btn btn-ghost" id="shareBtn" title="Skopírovať odkaz na tento zájazd">🔗 Zdieľať</button>
+          <a class="btn btn-primary btn-lg" href="${mailto}">✉️ Mám záujem</a>
+          ${tour.url ? `<a class="btn btn-ghost" href="${tour.url}" target="_blank" rel="noopener">Web ↗</a>` : ''}
+        </span>
       </div>
     </div>`;
   overlay.hidden = false;
   document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('shareBtn').addEventListener('click', () => shareTour(tour));
+  // deep-link (#6)
+  try { history.replaceState(null, '', `#zajazd=${encodeURIComponent(tour.id)}`); } catch (_) {}
 }
-function closeModal() { document.getElementById('modalOverlay').hidden = true; }
+
+function closeModal() {
+  document.getElementById('modalOverlay').hidden = true;
+  if (location.hash.startsWith('#zajazd=')) {
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
+  }
+}
+
+async function shareTour(tour) {
+  const url = `${location.origin}${location.pathname}#zajazd=${encodeURIComponent(tour.id)}`;
+  const data = { title: tour.title, text: `${tour.title} – CK DAKA`, url };
+  try {
+    if (navigator.share) { await navigator.share(data); return; }
+    await navigator.clipboard.writeText(url);
+    const btn = document.getElementById('shareBtn');
+    if (btn) { btn.textContent = '✅ Odkaz skopírovaný'; setTimeout(() => { btn.textContent = '🔗 Zdieľať'; }, 1800); }
+  } catch (_) { /* používateľ zrušil zdieľanie */ }
+}
+
+function openTourById(id) {
+  const tour = state.tours.find((t) => String(t.id) === String(id));
+  if (tour) openModal(tour, null);
+}
 
 // =========================================================================
 //  DETAILNÉ FILTRE / BROWSE
@@ -623,6 +756,7 @@ function fillSelect(id, values, labelFn) {
 
 function browseAll() {
   state.mode = 'browse';
+  document.getElementById('dealsSection').hidden = true;
   document.getElementById('wizard').hidden = true;
   document.getElementById('resultsSection').hidden = false;
   document.getElementById('filters').hidden = false;
@@ -646,9 +780,19 @@ function escapeHtml(s) {
 function bind() {
   document.getElementById('startQuizBtn').addEventListener('click', startQuiz);
   document.getElementById('browseAllBtn').addEventListener('click', browseAll);
+  document.getElementById('dealsBrowseBtn').addEventListener('click', browseAll);
   document.getElementById('nextBtn').addEventListener('click', nextStep);
   document.getElementById('backBtn').addEventListener('click', prevStep);
   document.getElementById('restartBtn').addEventListener('click', startQuiz);
+
+  // logo → úvod pomocníka
+  document.getElementById('homeLink').addEventListener('click', (e) => { e.preventDefault(); showHome(); });
+
+  // triedenie výsledkov
+  document.getElementById('sortSelect').addEventListener('change', (e) => {
+    state.sort = e.target.value;
+    renderResults();
+  });
 
   document.getElementById('toggleFiltersBtn').addEventListener('click', () => {
     const f = document.getElementById('filters');
@@ -671,6 +815,13 @@ function bind() {
 
 (async function init() {
   bind();
-  try { await loadTours(); }
-  catch (e) { document.getElementById('feedBadge').textContent = 'chyba načítania'; console.error(e); }
+  try {
+    await loadTours();
+    // deep-link: ak je v URL #zajazd=<id>, otvor detail (#6)
+    const m = location.hash.match(/^#zajazd=(.+)$/);
+    if (m) openTourById(decodeURIComponent(m[1]));
+  } catch (e) {
+    document.getElementById('feedBadge').textContent = 'chyba načítania';
+    console.error(e);
+  }
 })();
