@@ -35,10 +35,11 @@ jobs:
       - name: Build statickej verzie (stiahne feed alebo použije vzorku)
         run: npm run build:static
 
-      - name: Konfigurácia Pages (vrátane zapnutia)
+      - name: Konfigurácia Pages
+        # Pozn.: Pages treba v repozitári raz manuálne zapnúť
+        # (Settings → Pages → Build and deployment → Source: "GitHub Actions").
+        # Token v Actions nemá právo zapnúť Pages automaticky.
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - name: Upload artefaktu
         uses: actions/upload-pages-artifact@v3
