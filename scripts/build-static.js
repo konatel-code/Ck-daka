@@ -11,24 +11,32 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
 const OUT = join(ROOT, '_site');
 const FEED_URL = process.env.DAKA_FEED_URL || 'https://www.ckdaka.sk/export/xml';
+// V produkcii (workflow) nechceme nikdy nasadiť ukážkové dáta – radšej build padne.
+const REQUIRE_LIVE = process.env.REQUIRE_LIVE === '1';
+
+// prehliadačová hlavička – server feedu inak občas odmietne (403)
+const BROWSER_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+  Accept: 'application/xml, text/xml, application/xhtml+xml, */*;q=0.9',
+  'Accept-Language': 'sk,en;q=0.8',
+};
 
 async function fetchOnce(timeoutMs) {
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const res = await fetch(FEED_URL, {
-      signal: ctrl.signal,
-      headers: { 'User-Agent': 'CKDaka-Vyber/1.0', Accept: 'application/xml, text/xml, */*' },
-    });
+    const res = await fetch(FEED_URL, { signal: ctrl.signal, headers: BROWSER_HEADERS });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return await res.text();
+    const text = await res.text();
+    if (!/<SHOPITEM|<zajazd|<SHOP/i.test(text)) throw new Error('neočakávaný obsah feedu');
+    return text;
   } finally {
     clearTimeout(to);
   }
 }
 
 async function getXml() {
-  const attempts = 4;
+  const attempts = 6;
   let lastErr;
   for (let i = 1; i <= attempts; i++) {
     try {
@@ -38,8 +46,12 @@ async function getXml() {
     } catch (e) {
       lastErr = e;
       console.warn(`⚠ Pokus ${i}/${attempts} zlyhal: ${e.message || e}`);
-      if (i < attempts) await new Promise((r) => setTimeout(r, i * 3000));
+      if (i < attempts) await new Promise((r) => setTimeout(r, Math.min(i * 4000, 16000)));
     }
+  }
+  if (REQUIRE_LIVE) {
+    throw new Error(`Živý feed sa nepodarilo stiahnuť (${lastErr?.message || lastErr}). ` +
+      'Build zámerne padá, aby sa nenasadili ukážkové dáta (REQUIRE_LIVE=1).');
   }
   console.warn('⚠ Živý feed nedostupný – použijem ukážkové dáta.');
   const xml = await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8');

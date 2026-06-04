@@ -182,6 +182,15 @@ function placeOf(tour) {
 function nocSlovo(n) { return n === 1 ? 'noc' : (n >= 2 && n <= 4 ? 'noci' : 'nocí'); }
 function fmtPrice(p) { return Number(p).toLocaleString('sk-SK'); }
 
+// HTML blok ceny: prečiarknutá pôvodná cena (ak je zľava) + cena "od X €".
+function priceBlock(tour, perPerson = true) {
+  if (typeof tour.price !== 'number') return 'cena na dopyt';
+  const os = perPerson ? ' <small>/os.</small>' : '';
+  const orig = (tour.originalPrice && tour.originalPrice > tour.price)
+    ? `<s class="tc-orig">${fmtPrice(tour.originalPrice)} €</s> ` : '';
+  return `${orig}${tour.priceFrom ? 'od ' : ''}${fmtPrice(tour.price)}&nbsp;€${os}`;
+}
+
 function tourTagline(tour) {
   const place = tour.destination || tour.country || '';
   const n = tour.nights;
@@ -423,8 +432,14 @@ function renderStep() {
   }
 }
 
-function nextStep() { if (state.step < STEPS.length - 1) { state.step++; renderStep(); } else finishQuiz(); }
-function prevStep() { if (state.step > 0) { state.step--; renderStep(); } }
+function scrollWizardTop() {
+  const w = document.getElementById('wizard');
+  if (!w || w.hidden) return;
+  const y = w.getBoundingClientRect().top + window.scrollY - 64; // odpočet lepkavej hlavičky
+  window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+}
+function nextStep() { if (state.step < STEPS.length - 1) { state.step++; renderStep(); scrollWizardTop(); } else finishQuiz(); }
+function prevStep() { if (state.step > 0) { state.step--; renderStep(); scrollWizardTop(); } }
 
 function finishQuiz() {
   document.getElementById('progressBar').style.width = '100%';
@@ -510,9 +525,7 @@ function renderCard(tour, score) {
   const el = document.createElement('article');
   el.className = 'tour-card card';
   const img = tour.image || `https://picsum.photos/seed/${encodeURIComponent(tour.id)}/640/420`;
-  const priceHtml = typeof tour.price === 'number'
-    ? `${tour.priceFrom ? 'od ' : ''}${fmtPrice(tour.price)}&nbsp;€ <small>/os.</small>`
-    : 'cena na dopyt';
+  const priceHtml = priceBlock(tour);
   const matchBadge = score != null ? `<span class="tc-match">${score}% zhoda</span>` : '';
 
   const meta = [];
@@ -571,7 +584,7 @@ function openModal(tour, score) {
       <div class="modal-row">${chips.map((c) => `<span class="chip">${escapeHtml(String(c))}</span>`).join('')}</div>
       <p class="modal-desc">${escapeHtml(tour.description || 'Detailný popis nájdeš na stránke zájazdu.')}</p>
       <div class="modal-foot">
-        <span class="tc-price">${typeof tour.price === 'number' ? (tour.priceFrom ? 'od ' : '') + fmtPrice(tour.price) + ' € /os.' : 'cena na dopyt'}</span>
+        <span class="tc-price">${priceBlock(tour)}</span>
         ${tour.url ? `<a class="btn btn-primary btn-lg" href="${tour.url}" target="_blank" rel="noopener">Mám záujem ↗</a>` : ''}
       </div>
     </div>`;

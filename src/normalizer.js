@@ -122,7 +122,7 @@ function normalizeShopItem(item) {
 
   return {
     id: textOf(item.ITEM_ID) || textOf(item.PRODUCTNO) || `auto-${++_autoId}`,
-    title: title || place || 'Zájazd CK Daka',
+    title: title || place || 'Zájazd CK DAKA',
     country: place,
     destination: place,
     region: '',
@@ -209,7 +209,7 @@ function normalizeTourGeneric(raw) {
 
   return {
     id: pick(raw, ['id', 'kod', 'code']) || `auto-${++_autoId}`,
-    title: title || destination || country || 'Zájazd CK Daka',
+    title: title || destination || country || 'Zájazd CK DAKA',
     country, destination, region: '',
     price: toNumber(priceRaw), originalPrice: null, discount: null, priceFrom: false,
     priceText: priceRaw, currency: pick(raw, ['mena', 'currency']) || 'EUR',
