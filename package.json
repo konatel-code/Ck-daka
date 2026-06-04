@@ -1,0 +1,25 @@
+{
+  "name": "ckdaka-vyber-zajazdov",
+  "version": "1.0.0",
+  "description": "Hravý sprievodca výberom zájazdov CK Daka – načítava ponuku z www.ckdaka.sk/export/xml a podľa zadania klienta odporučí ten najlepší zájazd.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "build:static": "node scripts/build-static.js"
+  },
+  "keywords": [
+    "ckdaka",
+    "zajazdy",
+    "cestovanie",
+    "dovolenka"
+  ],
+  "author": "CK Daka",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "express": "^4.21.2",
+    "fast-xml-parser": "^4.5.1"
+  }
+}

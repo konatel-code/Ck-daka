@@ -1,0 +1,225 @@
+/* =========================================================================
+   CK DAKA – FAREBNÁ PALETA (placeholder)
+   ▸ Toto je jediné miesto, kde meníme firemné farby. Po dodaní loga sem
+     vložíme presné HEX kódy a celá appka sa preladí.
+   ========================================================================= */
+:root {
+  /* Presné firemné farby CK Daka odvodené z loga (poštová pečiatka). */
+  --brand:        #243660;   /* značková tmavomodrá (navy) */
+  --brand-dark:   #1a2848;   /* tmavšia navy pre hover/hlavičku */
+  --brand-light:  #eaedf5;   /* svetlé modrasté pozadie sekcií */
+  --accent:       #5a9c30;   /* značková zelená (CTA, zvýraznenia) */
+  --accent-dark:  #4a8226;   /* tmavšia zelená pre hover */
+  --accent-soft:  #eef6e7;   /* jemné zelené pozadie */
+  --ink:          #243660;   /* základný text (navy) */
+  --muted:        #6b7691;   /* sekundárny text */
+  --bg:           #f6f8fc;   /* pozadie stránky */
+  --card:         #ffffff;
+  --line:         #e3e7f0;
+  --good:         #4a8226;
+  --shadow:       0 10px 30px rgba(36, 54, 96, 0.12);
+  --radius:       18px;
+  --radius-sm:    12px;
+}
+
+/* =========================================================================
+   ZÁKLAD
+   ========================================================================= */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Atribút hidden musí mať prednosť pred display z tried (napr. .modal-overlay). */
+[hidden] { display: none !important; }
+
+body {
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+}
+
+h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
+
+.container { max-width: 1120px; margin: 0 auto; padding: 0 20px 60px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.muted { color: var(--muted); }
+.accent { color: var(--accent-dark); }
+
+/* =========================================================================
+   TLAČIDLÁ
+   ========================================================================= */
+.btn {
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 1rem;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 22px;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .12s ease, background .15s ease;
+  white-space: nowrap;
+}
+.btn:active { transform: translateY(1px) scale(.99); }
+.btn-lg { padding: 15px 30px; font-size: 1.08rem; }
+
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(90,156,48,.35); }
+.btn-primary:hover { background: var(--accent-dark); box-shadow: 0 8px 22px rgba(74,130,38,.42); }
+
+.btn-ghost { background: transparent; color: var(--brand); border: 2px solid var(--line); }
+.btn-ghost:hover { border-color: var(--brand); background: var(--brand-light); }
+
+/* =========================================================================
+   HLAVIČKA
+   ========================================================================= */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 22px;
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-img { height: 42px; width: auto; display: block; }
+.brand-logo { font-size: 1.7rem; }
+.brand-name { font-size: 1.45rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.feed-badge {
+  font-size: .78rem; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+  background: var(--brand-light); color: var(--brand-dark);
+}
+.feed-badge.live { background: #e3f7ec; color: var(--good); }
+.feed-badge.sample { background: #fff2dc; color: var(--accent-dark); }
+
+/* =========================================================================
+   HERO
+   ========================================================================= */
+.hero {
+  background:
+    radial-gradient(1200px 400px at 80% -50%, rgba(255,157,46,.25), transparent 60%),
+    linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%);
+  color: #fff;
+  padding: 64px 20px 72px;
+  text-align: center;
+}
+.hero-inner { max-width: 760px; margin: 0 auto; }
+.hero-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; }
+.hero-title .accent { color: #9bd36a; }
+.hero-sub { margin: 18px auto 30px; font-size: 1.15rem; max-width: 620px; opacity: .95; }
+.hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero .btn-ghost { color: #fff; border-color: rgba(255,255,255,.5); }
+.hero .btn-ghost:hover { background: rgba(255,255,255,.14); border-color: #fff; }
+
+/* =========================================================================
+   SPRIEVODCA / KVÍZ
+   ========================================================================= */
+.wizard { margin-top: -36px; padding: 28px; position: relative; }
+.wizard-head { display: flex; align-items: center; gap: 16px; margin-bottom: 22px; }
+.progress { flex: 1; height: 10px; background: var(--brand-light); border-radius: 999px; overflow: hidden; }
+.progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--accent-dark)); transition: width .35s ease; }
+.step-counter { font-weight: 700; color: var(--muted); font-size: .9rem; }
+
+.wizard-body { min-height: 240px; }
+.q-title { font-size: 1.7rem; font-weight: 800; margin-bottom: 6px; }
+.q-hint { color: var(--muted); margin-bottom: 22px; }
+
+.option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.option {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 20px 14px; border: 2px solid var(--line); border-radius: var(--radius-sm);
+  background: #fff; cursor: pointer; text-align: center; font-weight: 700;
+  transition: all .14s ease;
+}
+.option .emoji { font-size: 2rem; }
+.option:hover { border-color: var(--brand); transform: translateY(-2px); }
+.option.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 6px 16px rgba(90,156,48,.22); }
+.option.selected::after { content: '✓'; position: absolute; top: 8px; right: 10px; color: var(--accent-dark); font-weight: 800; }
+.option { position: relative; }
+
+.range-wrap { padding: 10px 0 20px; }
+.range-value { font-size: 2rem; font-weight: 800; color: var(--brand); text-align: center; margin-bottom: 10px; }
+input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
+
+.wizard-foot { display: flex; justify-content: space-between; margin-top: 26px; }
+
+/* =========================================================================
+   VÝSLEDKY + FILTRE
+   ========================================================================= */
+.results-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin: 38px 0 18px; }
+.results-head h2 { font-size: 1.8rem; }
+.results-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.results-meta { color: var(--muted); margin-bottom: 18px; font-weight: 600; }
+
+.filters { padding: 20px; margin-bottom: 22px; }
+.filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: .9rem; color: var(--muted); }
+.field select, .field input[type=text] {
+  font-family: inherit; font-size: 1rem; font-weight: 600; color: var(--ink);
+  padding: 10px 12px; border: 2px solid var(--line); border-radius: var(--radius-sm); background: #fff;
+}
+.field select:focus, .field input:focus { outline: none; border-color: var(--brand); }
+
+/* =========================================================================
+   KARTY ZÁJAZDOV
+   ========================================================================= */
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 22px; }
+.tour-card {
+  display: flex; flex-direction: column; overflow: hidden; cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.tour-card:hover { transform: translateY(-4px); box-shadow: 0 16px 36px rgba(10,60,110,.16); }
+.tc-img { position: relative; aspect-ratio: 16/10; background: var(--brand-light) center/cover no-repeat; }
+.tc-match {
+  position: absolute; top: 12px; left: 12px;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: .82rem;
+  padding: 5px 12px; border-radius: 999px; box-shadow: 0 4px 10px rgba(0,0,0,.18);
+}
+.tc-type {
+  position: absolute; top: 12px; right: 12px;
+  background: rgba(255,255,255,.92); color: var(--brand-dark); font-weight: 700; font-size: .76rem;
+  padding: 4px 10px; border-radius: 999px;
+}
+.tc-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.tc-title { font-family: 'Baloo 2'; font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+.tc-place { color: var(--muted); font-weight: 700; font-size: .9rem; }
+.tc-quip { font-size: .9rem; font-style: italic; color: var(--accent-dark); }
+.tc-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.chip { background: var(--brand-light); color: var(--brand-dark); font-size: .76rem; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+.tc-foot { display: flex; align-items: baseline; justify-content: space-between; margin-top: auto; padding-top: 10px; }
+.tc-price { font-family: 'Baloo 2'; font-size: 1.5rem; font-weight: 800; color: var(--brand); }
+.tc-price small { font-size: .8rem; color: var(--muted); font-weight: 600; }
+
+.empty { text-align: center; padding: 50px 20px; color: var(--muted); font-size: 1.1rem; }
+
+/* =========================================================================
+   MODÁLNE OKNO (detail)
+   ========================================================================= */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(6,40,70,.55);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50;
+}
+.modal { max-width: 640px; width: 100%; max-height: 90vh; overflow: auto; padding: 0; }
+.modal-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--brand-light); }
+.modal-content { padding: 24px 26px 28px; }
+.modal-content h3 { font-size: 1.6rem; margin-bottom: 6px; }
+.modal-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.modal-desc { margin: 14px 0 20px; color: #334b61; }
+.modal-foot { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.close-x { position: absolute; }
+
+/* =========================================================================
+   FOOTER + RESPONZÍVNOSŤ
+   ========================================================================= */
+.footer { text-align: center; padding: 34px 20px; color: var(--muted); border-top: 1px solid var(--line); background: var(--card); }
+.footer code { background: var(--brand-light); padding: 2px 8px; border-radius: 6px; color: var(--brand-dark); }
+
+@media (max-width: 560px) {
+  .results-head { flex-direction: column; align-items: flex-start; }
+  .wizard { padding: 20px 16px; }
+  .q-title { font-size: 1.4rem; }
+}
