@@ -215,11 +215,37 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
 /* =========================================================================
    FOOTER + RESPONZÍVNOSŤ
    ========================================================================= */
-.footer { text-align: center; padding: 34px 20px; color: var(--muted); border-top: 1px solid var(--line); background: var(--card); }
+.footer { text-align: center; padding: 30px 20px; color: var(--muted); border-top: 1px solid var(--line); background: var(--card); }
 .footer code { background: var(--brand-light); padding: 2px 8px; border-radius: 6px; color: var(--brand-dark); }
+.footer-contacts { display: flex; gap: 10px 22px; justify-content: center; flex-wrap: wrap; margin: 8px 0; }
+.footer-contacts a { color: var(--brand); font-weight: 800; text-decoration: none; }
+.footer-contacts a:hover { color: var(--accent-dark); text-decoration: underline; }
 
-@media (max-width: 560px) {
+/* prečiarknutá pôvodná cena pri zľave */
+.tc-orig { color: var(--muted); font-weight: 700; font-size: .62em; margin-right: 2px; }
+
+/* =========================================================================
+   MOBILNÁ OPTIMALIZÁCIA
+   ========================================================================= */
+@media (max-width: 640px) {
+  .hero { padding: 36px 18px 44px; }
+  .hero-sub { font-size: 1.02rem; margin: 14px auto 22px; }
+  .hero-cta .btn-lg { padding: 13px 22px; font-size: 1rem; }
+
+  .wizard { margin-top: -28px; padding: 18px 14px; }
+  .wizard-body { min-height: 0; }
+  .q-title { font-size: 1.35rem; }
+  .q-hint { margin-bottom: 16px; }
+
+  /* kompaktnejšie dlaždice, nech sa krok zmestí bez veľkého rolovania */
+  .option-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .option { padding: 14px 10px; font-size: .95rem; }
+  .option .emoji { font-size: 1.6rem; }
+
+  .wizard-foot { position: sticky; bottom: 0; background: var(--card); padding-top: 12px; margin-top: 16px; }
+
   .results-head { flex-direction: column; align-items: flex-start; }
-  .wizard { padding: 20px 16px; }
-  .q-title { font-size: 1.4rem; }
+  .cards-grid { grid-template-columns: 1fr; gap: 16px; }
+  .topbar { padding: 10px 14px; }
+  .brand-img { height: 34px; }
 }
