@@ -4,18 +4,20 @@
      vložíme presné HEX kódy a celá appka sa preladí.
    ========================================================================= */
 :root {
-  --brand:        #0a6cba;   /* hlavná značková (more / modrá) */
-  --brand-dark:   #064a80;   /* tmavšia pre hover/hlavičku */
-  --brand-light:  #e8f3fc;   /* svetlé pozadie sekcií */
-  --accent:       #ff9d2e;   /* slnečný akcent (CTA, zvýraznenia) */
-  --accent-dark:  #f07f00;
-  --ink:          #15324a;   /* základný text */
-  --muted:        #6b8197;   /* sekundárny text */
-  --bg:           #f6fafd;   /* pozadie stránky */
+  /* Presné firemné farby CK Daka odvodené z loga (poštová pečiatka). */
+  --brand:        #243660;   /* značková tmavomodrá (navy) */
+  --brand-dark:   #1a2848;   /* tmavšia navy pre hover/hlavičku */
+  --brand-light:  #eaedf5;   /* svetlé modrasté pozadie sekcií */
+  --accent:       #5a9c30;   /* značková zelená (CTA, zvýraznenia) */
+  --accent-dark:  #4a8226;   /* tmavšia zelená pre hover */
+  --accent-soft:  #eef6e7;   /* jemné zelené pozadie */
+  --ink:          #243660;   /* základný text (navy) */
+  --muted:        #6b7691;   /* sekundárny text */
+  --bg:           #f6f8fc;   /* pozadie stránky */
   --card:         #ffffff;
-  --line:         #e2ecf4;
-  --good:         #2bb673;
-  --shadow:       0 10px 30px rgba(10, 60, 110, 0.10);
+  --line:         #e3e7f0;
+  --good:         #4a8226;
+  --shadow:       0 10px 30px rgba(36, 54, 96, 0.12);
   --radius:       18px;
   --radius-sm:    12px;
 }
@@ -63,8 +65,8 @@ h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
 .btn:active { transform: translateY(1px) scale(.99); }
 .btn-lg { padding: 15px 30px; font-size: 1.08rem; }
 
-.btn-primary { background: var(--accent); color: #3a2200; box-shadow: 0 6px 16px rgba(255,157,46,.35); }
-.btn-primary:hover { background: var(--accent-dark); box-shadow: 0 8px 22px rgba(240,127,0,.42); }
+.btn-primary { background: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(90,156,48,.35); }
+.btn-primary:hover { background: var(--accent-dark); box-shadow: 0 8px 22px rgba(74,130,38,.42); }
 
 .btn-ghost { background: transparent; color: var(--brand); border: 2px solid var(--line); }
 .btn-ghost:hover { border-color: var(--brand); background: var(--brand-light); }
@@ -80,6 +82,7 @@ h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
   position: sticky; top: 0; z-index: 20;
 }
 .brand { display: flex; align-items: center; gap: 10px; }
+.brand-img { height: 42px; width: auto; display: block; }
 .brand-logo { font-size: 1.7rem; }
 .brand-name { font-size: 1.45rem; font-weight: 800; color: var(--brand); letter-spacing: .3px; }
 .topbar-right { display: flex; align-items: center; gap: 12px; }
@@ -103,7 +106,7 @@ h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
 }
 .hero-inner { max-width: 760px; margin: 0 auto; }
 .hero-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; }
-.hero-title .accent { color: #ffd089; }
+.hero-title .accent { color: #9bd36a; }
 .hero-sub { margin: 18px auto 30px; font-size: 1.15rem; max-width: 620px; opacity: .95; }
 .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 .hero .btn-ghost { color: #fff; border-color: rgba(255,255,255,.5); }
@@ -131,7 +134,9 @@ h1, h2, h3, .brand-name { font-family: 'Baloo 2', system-ui, sans-serif; }
 }
 .option .emoji { font-size: 2rem; }
 .option:hover { border-color: var(--brand); transform: translateY(-2px); }
-.option.selected { border-color: var(--accent); background: #fff8ee; box-shadow: 0 6px 16px rgba(255,157,46,.22); }
+.option.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 6px 16px rgba(90,156,48,.22); }
+.option.selected::after { content: '✓'; position: absolute; top: 8px; right: 10px; color: var(--accent-dark); font-weight: 800; }
+.option { position: relative; }
 
 .range-wrap { padding: 10px 0 20px; }
 .range-value { font-size: 2rem; font-weight: 800; color: var(--brand); text-align: center; margin-bottom: 10px; }
@@ -168,7 +173,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
 .tc-img { position: relative; aspect-ratio: 16/10; background: var(--brand-light) center/cover no-repeat; }
 .tc-match {
   position: absolute; top: 12px; left: 12px;
-  background: var(--accent); color: #3a2200; font-weight: 800; font-size: .82rem;
+  background: var(--accent); color: #fff; font-weight: 800; font-size: .82rem;
   padding: 5px 12px; border-radius: 999px; box-shadow: 0 4px 10px rgba(0,0,0,.18);
 }
 .tc-type {

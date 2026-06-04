@@ -1,0 +1,57 @@
+name: Deploy náhľad (GitHub Pages)
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# povolíme len jeden súbežný deploy
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Inštalácia závislostí
+        run: npm ci
+
+      - name: Build statickej verzie (stiahne feed alebo použije vzorku)
+        run: npm run build:static
+
+      - name: Konfigurácia Pages (vrátane zapnutia)
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artefaktu
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
