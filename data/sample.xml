@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ukážková vzorka štruktúry feedu CK Daka pre lokálny vývoj a testovanie.
+     Reálny export z https://www.ckdaka.sk/export/xml môže mať iné názvy polí –
+     normalizér v src/normalizer.js je na to pripravený. -->
+<zajazdy>
+  <zajazd>
+    <id>DK-1001</id>
+    <nazov>Letné slnko na Kréte – Hotel Aegean Blue</nazov>
+    <krajina>Grécko</krajina>
+    <destinacia>Kréta - Hersonissos</destinacia>
+    <cena>649</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-07-12</termin_od>
+    <termin_do>2026-07-19</termin_do>
+    <pocet_noci>7</pocet_noci>
+    <doprava>letecky</doprava>
+    <strava>all inclusive</strava>
+    <ubytovanie>Hotel ****</ubytovanie>
+    <typ>more</typ>
+    <hodnotenie>4.5</hodnotenie>
+    <popis>Rodinný hotel priamo pri pláži, all inclusive, detský klub a animácie. Ideálne pre rodiny s deťmi.</popis>
+    <obrazok>https://picsum.photos/seed/kreta/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1001</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1002</id>
+    <nazov>Dovolenka v Egypte – Hurghada All Inclusive</nazov>
+    <krajina>Egypt</krajina>
+    <destinacia>Hurghada</destinacia>
+    <cena>529</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-10-03</termin_od>
+    <termin_do>2026-10-10</termin_do>
+    <pocet_noci>7</pocet_noci>
+    <doprava>letecky</doprava>
+    <strava>all inclusive</strava>
+    <ubytovanie>Resort *****</ubytovanie>
+    <typ>exotika</typ>
+    <hodnotenie>4.7</hodnotenie>
+    <popis>Potápanie pri koralových útesoch, teplé more aj na jeseň, luxusný resort s niekoľkými bazénmi.</popis>
+    <obrazok>https://picsum.photos/seed/egypt/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1002</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1003</id>
+    <nazov>Poznávací okruh Toskánskom</nazov>
+    <krajina>Taliansko</krajina>
+    <destinacia>Florencia, Pisa, Siena</destinacia>
+    <cena>389</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-05-08</termin_od>
+    <termin_do>2026-05-11</termin_do>
+    <pocet_noci>3</pocet_noci>
+    <doprava>autobus</doprava>
+    <strava>raňajky</strava>
+    <ubytovanie>Hotel ***</ubytovanie>
+    <typ>mesto</typ>
+    <hodnotenie>4.3</hodnotenie>
+    <popis>Predĺžený víkend plný umenia, vína a histórie. Sprievodca, návšteva galérií a vinárstva.</popis>
+    <obrazok>https://picsum.photos/seed/toskansko/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1003</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1004</id>
+    <nazov>Vysoké Tatry – turistika a wellness</nazov>
+    <krajina>Slovensko</krajina>
+    <destinacia>Štrbské Pleso</destinacia>
+    <cena>299</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-08-15</termin_od>
+    <termin_do>2026-08-20</termin_do>
+    <pocet_noci>5</pocet_noci>
+    <doprava>vlastná</doprava>
+    <strava>polpenzia</strava>
+    <ubytovanie>Horský hotel ****</ubytovanie>
+    <typ>hory</typ>
+    <hodnotenie>4.6</hodnotenie>
+    <popis>Turistické chodníky, wellness a panoramatické výhľady. Vhodné pre páry aj aktívnych seniorov.</popis>
+    <obrazok>https://picsum.photos/seed/tatry/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1004</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1005</id>
+    <nazov>Exotika na Maldivách – overwater bungalov</nazov>
+    <krajina>Maldivy</krajina>
+    <destinacia>Atol Ari</destinacia>
+    <cena>1890</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-12-19</termin_od>
+    <termin_do>2026-12-29</termin_do>
+    <pocet_noci>10</pocet_noci>
+    <doprava>letecky</doprava>
+    <strava>all inclusive</strava>
+    <ubytovanie>Resort *****</ubytovanie>
+    <typ>exotika</typ>
+    <hodnotenie>4.9</hodnotenie>
+    <popis>Svadobná cesta snov, vily nad vodou, šnorchlovanie s rajami. Romantika pre dvoch.</popis>
+    <obrazok>https://picsum.photos/seed/maldivy/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1005</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1006</id>
+    <nazov>Eurovíkend v Ríme</nazov>
+    <krajina>Taliansko</krajina>
+    <destinacia>Rím</destinacia>
+    <cena>259</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-04-24</termin_od>
+    <termin_do>2026-04-27</termin_do>
+    <pocet_noci>3</pocet_noci>
+    <doprava>letecky</doprava>
+    <strava>raňajky</strava>
+    <ubytovanie>Hotel ***</ubytovanie>
+    <typ>mesto</typ>
+    <hodnotenie>4.4</hodnotenie>
+    <popis>Koloseum, Vatikán, talianska kuchyňa. Ideálne pre partiu priateľov aj páry.</popis>
+    <obrazok>https://picsum.photos/seed/rim/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1006</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1007</id>
+    <nazov>Bulharsko Slnečné pobrežie – rodinná dovolenka</nazov>
+    <krajina>Bulharsko</krajina>
+    <destinacia>Slnečné pobrežie</destinacia>
+    <cena>349</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-06-20</termin_od>
+    <termin_do>2026-06-27</termin_do>
+    <pocet_noci>7</pocet_noci>
+    <doprava>autobus</doprava>
+    <strava>all inclusive</strava>
+    <ubytovanie>Hotel ***</ubytovanie>
+    <typ>more</typ>
+    <hodnotenie>4.1</hodnotenie>
+    <popis>Pozvoľná pláž, aquapark a animácie pre deti. Skvelý pomer cena/výkon pre rodiny.</popis>
+    <obrazok>https://picsum.photos/seed/bulharsko/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1007</url>
+  </zajazd>
+  <zajazd>
+    <id>DK-1008</id>
+    <nazov>Wellness pobyt Maďarsko – Hévíz</nazov>
+    <krajina>Maďarsko</krajina>
+    <destinacia>Hévíz</destinacia>
+    <cena>219</cena>
+    <mena>EUR</mena>
+    <termin_od>2026-11-06</termin_od>
+    <termin_do>2026-11-09</termin_do>
+    <pocet_noci>3</pocet_noci>
+    <doprava>vlastná</doprava>
+    <strava>polpenzia</strava>
+    <ubytovanie>Wellness hotel ****</ubytovanie>
+    <typ>wellness</typ>
+    <hodnotenie>4.2</hodnotenie>
+    <popis>Termálne jazero, procedúry a relax. Ideálne pre páry a seniorov mimo sezóny.</popis>
+    <obrazok>https://picsum.photos/seed/heviz/640/420</obrazok>
+    <url>https://www.ckdaka.sk/zajazd/DK-1008</url>
+  </zajazd>
+</zajazdy>
