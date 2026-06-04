@@ -246,10 +246,11 @@ function regionMatch(tour, region) {
 // =========================================================================
 async function fetchData() {
   try {
-    const r = await fetch('api/tours', { headers: { Accept: 'application/json' } });
+    const r = await fetch('api/tours', { headers: { Accept: 'application/json' }, cache: 'no-store' });
     if (r.ok && (r.headers.get('content-type') || '').includes('json')) return await r.json();
   } catch (_) { /* žiadny server – skúsime statický súbor */ }
-  const r2 = await fetch('tours.json');
+  // cache-busting: vždy načítame najaktuálnejšiu ponuku, nie starú z cache
+  const r2 = await fetch(`tours.json?ts=${Date.now()}`, { cache: 'no-store' });
   return await r2.json();
 }
 
