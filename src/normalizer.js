@@ -162,23 +162,28 @@ function normalizeShopItem(item) {
     discount: toNumber(d.DISCOUNT_PERCENT),
   })).filter((d) => d.price != null && d.price > 0);
 
-  // reprezentatívny termín = najlacnejší (cena "od")
-  let best = null;
-  for (const d of dates) if (!best || d.price < best.price) best = d;
+  // cena "od" = najlacnejší termín
+  let cheapest = null;
+  for (const d of dates) if (!cheapest || d.price < cheapest.price) cheapest = d;
 
   // všetky termíny pre kalendár v detaile (zoradené podľa dátumu, orezané)
   const terms = [...dates]
     .sort((a, b) => String(a.from || '').localeCompare(String(b.from || '')))
     .slice(0, 40);
 
-  let nights = best?.nights ?? null;
-  if ((nights == null || nights === 0) && best?.from && best?.to) {
-    const diff = Math.round((new Date(best.to) - new Date(best.from)) / 86400000);
+  // "Najbližší termín" = najskorší nadchádzajúci termín (nie najlacnejší!)
+  const today = new Date().toISOString().slice(0, 10);
+  const dated = dates.filter((d) => d.from).sort((a, b) => a.from.localeCompare(b.from));
+  const earliest = dated.find((d) => d.from >= today) || dated[0] || cheapest;
+
+  let nights = earliest?.nights ?? null;
+  if ((nights == null || nights === 0) && earliest?.from && earliest?.to) {
+    const diff = Math.round((new Date(earliest.to) - new Date(earliest.from)) / 86400000);
     if (diff > 0 && diff < 200) nights = diff;
   }
 
-  const dateFrom = best?.from ?? null;
-  const dateTo = best?.to ?? null;
+  const dateFrom = earliest?.from ?? null;
+  const dateTo = earliest?.to ?? null;
   const month = dateFrom ? parseInt(dateFrom.slice(5, 7), 10) : null;
 
   const hay = norm([title, place, description, categoryText, categoryNames, priceInfo].join(' '));
@@ -192,10 +197,10 @@ function normalizeShopItem(item) {
     country: place,
     destination: place,
     region: '',
-    price: best?.price ?? null,
-    originalPrice: best?.orig ?? null,
-    discount: best?.discount ?? null,
-    priceFrom: dates.length > 1 || (best?.price != null),
+    price: cheapest?.price ?? null,
+    originalPrice: cheapest?.orig ?? null,
+    discount: cheapest?.discount ?? null,
+    priceFrom: dates.length > 1 || (cheapest?.price != null),
     priceText: '',
     currency: 'EUR',
     dateFrom,
