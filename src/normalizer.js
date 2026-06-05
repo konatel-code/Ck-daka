@@ -99,6 +99,28 @@ function deriveTransport(hay) {
   return '';
 }
 
+// Skutočné trvanie zájazdu v dňoch z názvu (operátor takto inzeruje).
+// Feed v NIGHTS posiela len HOTELOVÉ noci – pri autobusových zájazdoch s
+// nočnými presunmi to nezodpovedá reálnemu počtu dní.
+const DAY_WORDS = {
+  jednodnov: 1, celodenn: 1, dvojdnov: 2, trojdnov: 3, stvordnov: 4, styridnov: 4,
+  patdnov: 5, sestdnov: 6, sedemdnov: 7, osemdnov: 8, devatdnov: 9, desatdnov: 10,
+};
+function parseDaysFromTitle(title) {
+  const d = norm(title);
+  const m = d.match(/(\d+)\s*-?\s*dnov/) || d.match(/(\d+)\s*dni\b/) || d.match(/(\d+)\s*dn[ií]/);
+  if (m) return parseInt(m[1], 10);
+  for (const [k, v] of Object.entries(DAY_WORDS)) if (d.includes(k)) return v;
+  return null;
+}
+// počet dní: prednostne z názvu, inak z hotelových nocí (noci + 1)
+function computeDays(title, nights) {
+  const t = parseDaysFromTitle(title);
+  if (t != null) return t;
+  if (nights == null) return null;
+  return nights === 0 ? 1 : nights + 1;
+}
+
 function deriveBoard(hay) {
   if (/all\s*inclusive|ultra all/.test(hay)) return 'all inclusive';
   if (/pln[aá]\s*penzi|plnou penziou/.test(hay)) return 'plná penzia';
@@ -171,6 +193,7 @@ function normalizeShopItem(item) {
     dateTo,
     month,
     nights,
+    days: computeDays(title, nights),
     termsCount: dates.length,
     terms,
     transport: deriveTransport(hay),
@@ -250,7 +273,8 @@ function normalizeTourGeneric(raw) {
     price: toNumber(priceRaw), originalPrice: null, discount: null, priceFrom: false,
     priceText: priceRaw, currency: pick(raw, ['mena', 'currency']) || 'EUR',
     dateFrom, dateTo, month: dateFrom ? parseInt(dateFrom.slice(5, 7), 10) : null,
-    nights: nights || null, termsCount: dateFrom ? 1 : 0,
+    nights: nights || null, days: computeDays(title, nights || null), termsCount: dateFrom ? 1 : 0,
+    terms: [],
     transport: deriveTransport(norm(transportRaw) + ' ' + hay), transportRaw,
     board: board || deriveBoard(hay), accommodation,
     type: typeRaw ? deriveType(norm(typeRaw) + ' ' + hay) : deriveType(hay),

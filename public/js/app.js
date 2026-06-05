@@ -190,14 +190,12 @@ function hashId(s) {
 function placeOf(tour) {
   return [...new Set([tour.destination, tour.region, tour.country].filter(Boolean))].join(', ');
 }
-function nocSlovo(n) { return n === 1 ? 'noc' : (n >= 2 && n <= 4 ? 'noci' : 'nocí'); }
 function dniSlovo(n) { return n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'); }
-// počet dní z počtu nocí (deň = noc + 1; 0 nocí = jednodňový zájazd)
-function daysText(nights) {
-  if (nights == null) return '';
-  if (nights === 0) return '1 deň';
-  const d = nights + 1;
-  return `${d} ${dniSlovo(d)}`;
+// trvanie zájazdu v dňoch – z poľa days (z názvu, inak hotelové noci + 1)
+function lenLabel(tour) {
+  const d = tour.days;
+  if (d == null) return '';
+  return d === 1 ? '1 deň' : `${d} ${dniSlovo(d)}`;
 }
 function fmtPrice(p) { return Number(p).toLocaleString('sk-SK'); }
 
@@ -212,12 +210,11 @@ function priceBlock(tour, perPerson = true, showOriginal = true) {
 
 function tourTagline(tour) {
   const place = tour.destination || tour.country || '';
-  const n = tour.nights;
-  const nightsTxt = n == null ? '' : (n === 0 ? 'jednodňovka' : `${n} ${nocSlovo(n)}`);
+  const lenTxt = lenLabel(tour);
   const priceTxt = tour.price != null ? `od ${fmtPrice(tour.price)} €` : '';
   const emoji = { more: '🏖️', exotika: '🌴', hory: '⛰️', mesto: '🏛️', wellness: '💆', eurovikend: '⚡', ine: '🧳' }[tour.type] || '🧳';
 
-  const head = [place, nightsTxt, priceTxt].filter(Boolean).join(' · ');
+  const head = [place, lenTxt, priceTxt].filter(Boolean).join(' · ');
   const disc = tour.discount && tour.discount > 0 ? ` · zľava −${tour.discount}%` : '';
   const tail = TAILS[hashId(String(tour.id) + tour.type) % TAILS.length];
   return `${emoji} ${head}${disc} — ${tail}`;
@@ -378,10 +375,10 @@ function scoreTour(tour, a) {
   if (a.month && MONTH_RANGES[a.month] && tour.month) {
     add('month', 12, MONTH_RANGES[a.month].includes(tour.month) ? 1 : 0);
   }
-  // dĺžka
-  if (a.duration && tour.nights) {
-    const n = tour.nights;
-    const ok = (a.duration === 'vikend' && n <= 4) || (a.duration === 'tyzden' && n >= 5 && n <= 8) || (a.duration === 'dlhe' && n >= 9);
+  // dĺžka (počítame v dňoch)
+  if (a.duration && tour.days) {
+    const d = tour.days;
+    const ok = (a.duration === 'vikend' && d <= 4) || (a.duration === 'tyzden' && d >= 5 && d <= 8) || (a.duration === 'dlhe' && d >= 9);
     add('duration', 10, ok ? 1 : 0.3);
   }
   // doprava
@@ -627,7 +624,7 @@ function renderCard(tour, score) {
 
   const meta = [];
   if (tour.transport && TRANSPORT_LABELS[tour.transport]) meta.push(TRANSPORT_LABELS[tour.transport]);
-  if (tour.nights != null) meta.push(tour.nights === 0 ? '🗓️ 1 deň' : `🌙 ${tour.nights} ${nocSlovo(tour.nights)}`);
+  if (lenLabel(tour)) meta.push(`🗓️ ${lenLabel(tour)}`);
   if (tour.board) meta.push(`🍽️ ${tour.board}`);
   if (tour.discount && tour.discount > 0) meta.push(`🔖 −${tour.discount}%`);
 
@@ -712,7 +709,7 @@ function openCompare() {
     ['Typ', (t) => TYPE_LABELS[t.type] || '—'],
     ['Miesto', (t) => escapeHtml(placeOf(t)) || '—'],
     ['Doprava', (t) => (TRANSPORT_LABELS[t.transport] || '—')],
-    ['Dĺžka', (t) => (t.nights == null ? '—' : daysText(t.nights))],
+    ['Dĺžka', (t) => (lenLabel(t) || '—')],
     ['Strava', (t) => (t.board || '—')],
     ['Najbližší termín', (t) => (t.dateFrom ? fmtDate(t.dateFrom) : '—')],
     ['Počet termínov', (t) => (t.termsCount || '—')],
@@ -758,7 +755,7 @@ function openModal(tour, score) {
   const chips = [];
   if (tour.type) chips.push(TYPE_LABELS[tour.type] || tour.type);
   if (tour.transport && TRANSPORT_LABELS[tour.transport]) chips.push(TRANSPORT_LABELS[tour.transport]);
-  if (tour.nights != null) chips.push(`🗓️ ${daysText(tour.nights)}`);
+  if (lenLabel(tour)) chips.push(`🗓️ ${lenLabel(tour)}`);
   if (tour.board) chips.push(`🍽️ ${tour.board}`);
   if (tour.accommodation) chips.push(`🏨 ${tour.accommodation}`);
   if (tour.discount && tour.discount > 0) chips.push(`🔖 zľava −${tour.discount}%`);
@@ -769,10 +766,9 @@ function openModal(tour, score) {
   if (terms.length) {
     const rows = terms.map((t) => {
       const range = (t.from && t.to && t.from !== t.to) ? `${fmtDate(t.from)} – ${fmtDate(t.to)}` : fmtDate(t.from || t.to);
-      const days = (t.nights != null) ? ` · ${daysText(t.nights)}` : '';
       const orig = (t.orig && t.orig > t.price) ? `<s class="tc-orig">${fmtPrice(t.orig)} €</s> ` : '';
       const disc = (t.discount && t.discount > 0) ? ` <span class="term-disc">−${t.discount}%</span>` : '';
-      return `<li class="term-row"><span>📅 ${range}${days}</span><span class="term-price">${orig}${fmtPrice(t.price)} €${disc}</span></li>`;
+      return `<li class="term-row"><span>📅 ${range}</span><span class="term-price">${orig}${fmtPrice(t.price)} €${disc}</span></li>`;
     }).join('');
     termsHtml = `<div class="terms-cal"><h4>Dostupné termíny (${terms.length})</h4><ul class="term-list">${rows}</ul></div>`;
   }
