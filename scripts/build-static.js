@@ -13,8 +13,8 @@ const OUT = join(ROOT, '_site');
 const FEED_URL = process.env.DAKA_FEED_URL || 'https://www.ckdaka.sk/export/xml';
 // V produkcii (workflow) nechceme nikdy nasadiť ukážkové dáta – radšej build padne.
 const REQUIRE_LIVE = process.env.REQUIRE_LIVE === '1';
-// záloha posledných úspešne stiahnutých dát (commitovaná v repozitári)
-const LAST_GOOD = join(ROOT, 'data', 'last-good.xml');
+// záloha posledných úspešne stiahnutých dát (kompaktný JSON, commitovaný v repe)
+const LAST_GOOD = join(ROOT, 'data', 'last-good.json');
 
 // prehliadačová hlavička – server feedu inak občas odmietne (403)
 const BROWSER_HEADERS = {
@@ -37,51 +37,60 @@ async function fetchOnce(timeoutMs) {
   }
 }
 
-async function readFileOrNull(path) {
-  try { return await readFile(path, 'utf8'); } catch { return null; }
-}
-
-// Zdroj dát v poradí: 1) živý feed → 2) posledná dobrá záloha → 3) pád/sample
-async function getXml() {
+// pokus o stiahnutie živého feedu (s opakovaním); vráti XML alebo null
+async function tryLive() {
   const attempts = 6;
-  let lastErr;
+  let lastErr = null;
   for (let i = 1; i <= attempts; i++) {
     try {
       const xml = await fetchOnce(45000);
       console.log(`✓ Feed stiahnutý naživo z ${FEED_URL} (pokus ${i})`);
-      return { xml, source: 'live', error: null };
+      return { xml, error: null };
     } catch (e) {
       lastErr = e;
       console.warn(`⚠ Pokus ${i}/${attempts} zlyhal: ${e.message || e}`);
       if (i < attempts) await new Promise((r) => setTimeout(r, Math.min(i * 4000, 16000)));
     }
   }
-
-  // 2) záloha posledných úspešne stiahnutých dát
-  const backup = await readFileOrNull(LAST_GOOD);
-  if (backup) {
-    console.warn('⚠ Živý feed nedostupný – použijem zálohu (posledná dobrá ponuka).');
-    return { xml: backup, source: 'backup', error: String(lastErr?.message || lastErr) };
-  }
-
-  // 3) žiadna záloha – v produkcii radšej padni, inak ukážka
-  if (REQUIRE_LIVE) {
-    throw new Error(`Živý feed sa nepodarilo stiahnuť (${lastErr?.message || lastErr}) a neexistuje záloha. ` +
-      'Build zámerne padá, aby sa nenasadili ukážkové dáta (REQUIRE_LIVE=1).');
-  }
-  console.warn('⚠ Živý feed ani záloha nie sú dostupné – použijem ukážkové dáta.');
-  const xml = await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8');
-  return { xml, source: 'sample', error: String(lastErr?.message || lastErr) };
+  return { xml: null, error: String(lastErr?.message || lastErr) };
 }
 
-const { xml, source, error } = await getXml();
-const tours = normalizeFeed(xml);
+async function readBackupTours() {
+  try {
+    const parsed = JSON.parse(await readFile(LAST_GOOD, 'utf8'));
+    return Array.isArray(parsed) && parsed.length ? parsed : null;
+  } catch { return null; }
+}
+
+// Zdroj dát v poradí: 1) živý feed → 2) posledná dobrá záloha → 3) pád/ukážka
+const live = await tryLive();
+let tours, source, error = live.error;
+
+if (live.xml) {
+  tours = normalizeFeed(live.xml);
+  source = 'live';
+} else {
+  const backup = await readBackupTours();
+  if (backup) {
+    console.warn('⚠ Živý feed nedostupný – použijem zálohu (posledná dobrá ponuka).');
+    tours = backup;
+    source = 'backup';
+  } else if (REQUIRE_LIVE) {
+    throw new Error(`Živý feed sa nepodarilo stiahnuť (${error}) a neexistuje záloha. ` +
+      'Build zámerne padá, aby sa nenasadili ukážkové dáta (REQUIRE_LIVE=1).');
+  } else {
+    console.warn('⚠ Živý feed ani záloha nie sú dostupné – použijem ukážkové dáta.');
+    tours = normalizeFeed(await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8'));
+    source = 'sample';
+  }
+}
+
 const facets = buildFacets(tours);
 
-// po úspešnom živom stiahnutí ulož zálohu (commitne ju workflow)
+// po úspešnom živom stiahnutí ulož kompaktnú zálohu (commitne ju workflow)
 if (source === 'live') {
-  await writeFile(LAST_GOOD, xml);
-  console.log('✓ Záloha dát aktualizovaná → data/last-good.xml');
+  await writeFile(LAST_GOOD, JSON.stringify(tours));
+  console.log(`✓ Záloha dát aktualizovaná → data/last-good.json (${tours.length} zájazdov)`);
 }
 
 await mkdir(OUT, { recursive: true });
