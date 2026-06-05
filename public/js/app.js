@@ -191,9 +191,11 @@ function placeOf(tour) {
   return [...new Set([tour.destination, tour.region, tour.country].filter(Boolean))].join(', ');
 }
 function dniSlovo(n) { return n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'); }
-// trvanie zájazdu v dňoch – z poľa days (z názvu, inak hotelové noci + 1)
+// trvanie zájazdu v dňoch – z poľa days (z názvu, inak hotelové noci + 1).
+// Fallback na noci+1 zaistí trvanie aj pri staršej zálohe bez poľa days.
 function lenLabel(tour) {
-  const d = tour.days;
+  let d = tour.days;
+  if (d == null && tour.nights != null) d = tour.nights === 0 ? 1 : tour.nights + 1;
   if (d == null) return '';
   return d === 1 ? '1 deň' : `${d} ${dniSlovo(d)}`;
 }
