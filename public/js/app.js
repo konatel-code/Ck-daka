@@ -202,10 +202,10 @@ function daysText(nights) {
 function fmtPrice(p) { return Number(p).toLocaleString('sk-SK'); }
 
 // HTML blok ceny: prečiarknutá pôvodná cena (ak je zľava) + cena "od X €".
-function priceBlock(tour, perPerson = true) {
+function priceBlock(tour, perPerson = true, showOriginal = true) {
   if (typeof tour.price !== 'number') return 'cena na dopyt';
   const os = perPerson ? ' <small>/os.</small>' : '';
-  const orig = (tour.originalPrice && tour.originalPrice > tour.price)
+  const orig = (showOriginal && tour.originalPrice && tour.originalPrice > tour.price)
     ? `<s class="tc-orig">${fmtPrice(tour.originalPrice)} €</s> ` : '';
   return `${orig}${tour.priceFrom ? 'od ' : ''}${fmtPrice(tour.price)}&nbsp;€${os}`;
 }
@@ -706,7 +706,7 @@ function openCompare() {
   const modal = document.getElementById('compareModal');
 
   const rows = [
-    ['Cena', (t) => priceBlock(t, false)],
+    ['Cena', (t) => priceBlock(t, false, false)],
     ['Pôvodná cena', (t) => (t.originalPrice && t.originalPrice > t.price ? `${fmtPrice(t.originalPrice)} €` : '—')],
     ['Zľava', (t) => (t.discount ? `−${t.discount}%` : '—')],
     ['Typ', (t) => TYPE_LABELS[t.type] || '—'],
