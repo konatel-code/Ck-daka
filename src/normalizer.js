@@ -64,6 +64,33 @@ function deriveType(hay) {
   return 'ine';
 }
 
+// typ podľa kategórií feedu (má prednosť – je najspoľahlivejší)
+const CATEGORY_TYPE_RULES = [
+  { type: 'wellness', re: /(wellness|kupel|relax|termal|aquapark)/ },
+  { type: 'hory', re: /(lyz|hory|skipas|treking|turistik|zimn)/ },
+  { type: 'exotika', re: /(exotik)/ },
+  { type: 'eurovikend', re: /(eurovikend|advent|silvest)/ },
+  { type: 'mesto', re: /(poznavac|poznav|okruh|mesta|metropol|kultur)/ },
+  { type: 'more', re: /(pri mori|more|pobytov|leto|dovolenky pri|plavb)/ },
+];
+function deriveTypeFromCategory(catHay) {
+  for (const r of CATEGORY_TYPE_RULES) if (r.re.test(catHay)) return r.type;
+  return '';
+}
+
+// posledná pomôcka: typ podľa krajiny (prímorské → more, zámorské → exotika)
+const SEA_COUNTRIES = ['grecko', 'egypt', 'turecko', 'spanielsko', 'taliansko', 'chorvatsko',
+  'bulharsko', 'cyprus', 'tunisko', 'malta', 'portugalsko', 'cierna hora', 'albansko'];
+const EXOTIC_COUNTRIES = ['maldivy', 'thajsko', 'dominikanska republika', 'dominikana', 'kuba',
+  'dubaj', 'spojene arabske emiraty', 'emiraty', 'mexiko', 'zanzibar', 'tanzania', 'mauricius',
+  'vietnam', 'bali', 'indonezia', 'srilanka', 'kapverdy'];
+function guessTypeByCountry(country) {
+  const c = norm(country);
+  if (EXOTIC_COUNTRIES.includes(c)) return 'exotika';
+  if (SEA_COUNTRIES.includes(c)) return 'more';
+  return '';
+}
+
 function deriveTransport(hay) {
   if (/(letec|lietadl|charter|wizzair|ryanair|letenka)/.test(hay)) return 'letecky';
   if (/(autobus|autokar|klimatizovan)/.test(hay)) return 'autobus';
@@ -124,6 +151,9 @@ function normalizeShopItem(item) {
   const month = dateFrom ? parseInt(dateFrom.slice(5, 7), 10) : null;
 
   const hay = norm([title, place, description, categoryText, categoryNames, priceInfo].join(' '));
+  const catHay = norm(categoryText + ' ' + categoryNames);
+  let type = deriveTypeFromCategory(catHay) || deriveType(hay);
+  if (type === 'ine') type = guessTypeByCountry(place) || 'ine';
 
   return {
     id: textOf(item.ITEM_ID) || textOf(item.PRODUCTNO) || `auto-${++_autoId}`,
@@ -147,7 +177,7 @@ function normalizeShopItem(item) {
     transportRaw: '',
     board: deriveBoard(hay),
     accommodation: '',
-    type: deriveType(hay),
+    type,
     category: categoryText,
     description: description || stripHtml(textOf(item.DESCRIPTION_FULL)).slice(0, 280),
     image,
