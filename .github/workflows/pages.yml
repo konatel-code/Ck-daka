@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - "claude/**"
   workflow_dispatch:
   schedule:
     # automatická denná aktualizácia ponuky (03:00 UTC ≈ 04:00/05:00 SEČ)
@@ -12,7 +11,7 @@ on:
     - cron: "0 3 * * *"
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -40,6 +39,20 @@ jobs:
         run: npm run build:static
         env:
           REQUIRE_LIVE: "1"
+
+      - name: Ulož zálohu dát do repozitára (ak sa zmenila)
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          if [ -n "$(git status --porcelain data/last-good.xml)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/last-good.xml
+            git commit -m "chore: aktualizácia zálohy dát [skip ci]"
+            git push
+          else
+            echo "Záloha sa nezmenila – netreba commit."
+          fi
 
       - name: Konfigurácia Pages
         # Pozn.: Pages treba v repozitári raz manuálne zapnúť
