@@ -12,6 +12,14 @@
   <meta property="og:description" content="Odpovedz na pár otázok a vyberieme ti zájazd presne na mieru z aktuálnej ponuky CK DAKA." />
   <meta property="og:image" content="assets/logo.png" />
   <meta name="twitter:card" content="summary" />
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#243660" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="CK DAKA" />
+  <!-- anonymná analytika (Plausible – bez cookies, GDPR-friendly) -->
+  <script defer data-domain="konatel-code.github.io" src="https://plausible.io/js/script.tagged-events.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
@@ -139,6 +147,18 @@
   <!-- DETAIL ZÁJAZDU (modálne okno) -->
   <div class="modal-overlay" id="modalOverlay" hidden>
     <div class="modal card" id="modal" role="dialog" aria-modal="true"></div>
+  </div>
+
+  <!-- POROVNANIE -->
+  <div class="compare-bar" id="compareBar" hidden>
+    <span class="compare-info" id="compareInfo"></span>
+    <div class="compare-bar-actions">
+      <button class="btn btn-ghost" id="compareClear">Vyčistiť</button>
+      <button class="btn btn-primary" id="compareOpen">⚖️ Porovnať</button>
+    </div>
+  </div>
+  <div class="modal-overlay" id="compareOverlay" hidden>
+    <div class="modal compare-modal card" id="compareModal" role="dialog" aria-modal="true"></div>
   </div>
 
   <!-- našepkávač destinácií pre sprievodcu -->

@@ -9,7 +9,13 @@ const state = {
   step: 0,
   mode: 'quiz',     // 'quiz' | 'browse'
   sort: '',         // '' | 'price' | 'discount' | 'date'
+  compare: [],      // ID zájazdov vybraných na porovnanie
 };
+
+// anonymná analytika (Plausible) – bezpečný wrapper, funguje aj keď skript nie je načítaný
+function track(event, props) {
+  try { if (window.plausible) window.plausible(event, props ? { props } : undefined); } catch (_) {}
+}
 
 // ── REGIÓNY (mapovanie odpovede na krajiny / typ) ───────────────────────────
 const REGION_COUNTRIES = {
@@ -514,6 +520,7 @@ function finishQuiz() {
   state.mode = 'quiz';
   document.getElementById('wizard').hidden = true;
   cardClickGuardUntil = Date.now() + 700;
+  track('Sprievodca dokončený', { typ: state.answers.type || '—', region: state.answers.region || '—' });
   showResults();
   document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
 }
@@ -630,14 +637,104 @@ function renderCard(tour, score) {
       <div class="tc-meta">${meta.map((m) => `<span class="chip">${m}</span>`).join('')}</div>
       <div class="tc-foot">
         <span class="tc-price">${priceHtml}</span>
-        <span class="btn btn-primary" style="padding:8px 16px;font-size:.9rem">Detail</span>
+        <span class="tc-foot-actions">
+          <button class="cmp-toggle ${state.compare.includes(String(tour.id)) ? 'on' : ''}" title="Pridať do porovnania">⚖️</button>
+          <span class="btn btn-primary" style="padding:8px 16px;font-size:.9rem">Detail</span>
+        </span>
       </div>
     </div>`;
+  el.querySelector('.cmp-toggle').addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleCompare(tour.id);
+  });
   el.addEventListener('click', () => {
     if (Date.now() < cardClickGuardUntil) return; // ignoruj „ghost click" po výsledkoch
     openModal(tour, score);
   });
   return el;
+}
+
+// =========================================================================
+//  POROVNANIE ZÁJAZDOV
+// =========================================================================
+const COMPARE_MAX = 4;
+
+function toggleCompare(id) {
+  id = String(id);
+  const i = state.compare.indexOf(id);
+  if (i >= 0) state.compare.splice(i, 1);
+  else {
+    if (state.compare.length >= COMPARE_MAX) {
+      alert(`Naraz vieš porovnať najviac ${COMPARE_MAX} zájazdy.`);
+      return;
+    }
+    state.compare.push(id);
+  }
+  // prekresli viditeľné karty, aby sa zhodoval stav prepínačov
+  if (!document.getElementById('dealsSection').hidden) renderDeals();
+  if (!document.getElementById('resultsSection').hidden) renderResults();
+  updateCompareBar();
+}
+
+function updateCompareBar() {
+  const bar = document.getElementById('compareBar');
+  const info = document.getElementById('compareInfo');
+  const n = state.compare.length;
+  bar.hidden = n === 0;
+  info.textContent = `${n} ${n === 1 ? 'zájazd vybraný' : (n >= 2 && n <= 4 ? 'zájazdy vybrané' : 'zájazdov vybraných')} na porovnanie`;
+  document.getElementById('compareOpen').disabled = n < 2;
+}
+
+function clearCompare() {
+  state.compare = [];
+  document.querySelectorAll('.cmp-toggle.on').forEach((b) => b.classList.remove('on'));
+  updateCompareBar();
+}
+
+function openCompare() {
+  const tours = state.compare.map((id) => state.tours.find((t) => String(t.id) === id)).filter(Boolean);
+  if (tours.length < 2) return;
+  track('Porovnanie', { pocet: tours.length });
+  const overlay = document.getElementById('compareOverlay');
+  const modal = document.getElementById('compareModal');
+
+  const rows = [
+    ['Cena', (t) => priceBlock(t, false)],
+    ['Pôvodná cena', (t) => (t.originalPrice && t.originalPrice > t.price ? `${fmtPrice(t.originalPrice)} €` : '—')],
+    ['Zľava', (t) => (t.discount ? `−${t.discount}%` : '—')],
+    ['Typ', (t) => TYPE_LABELS[t.type] || '—'],
+    ['Miesto', (t) => escapeHtml(placeOf(t)) || '—'],
+    ['Doprava', (t) => (TRANSPORT_LABELS[t.transport] || '—')],
+    ['Dĺžka', (t) => (t.nights == null ? '—' : t.nights === 0 ? '1 deň' : `${t.nights} ${nocSlovo(t.nights)}`)],
+    ['Strava', (t) => (t.board || '—')],
+    ['Najbližší termín', (t) => (t.dateFrom ? fmtDate(t.dateFrom) : '—')],
+    ['Počet termínov', (t) => (t.termsCount || '—')],
+  ];
+
+  const head = tours.map((t) => {
+    const img = t.image || `https://picsum.photos/seed/${encodeURIComponent(t.id)}/300/200`;
+    return `<th><img src="${img}" alt="" loading="lazy" /><div class="cmp-title">${escapeHtml(t.title)}</div></th>`;
+  }).join('');
+
+  const body = rows.map(([label, fn]) =>
+    `<tr><th class="cmp-label">${label}</th>${tours.map((t) => `<td>${fn(t)}</td>`).join('')}</tr>`
+  ).join('');
+
+  const foot = tours.map((t) => `<td>${t.url ? `<a class="btn btn-primary" style="padding:8px 14px;font-size:.88rem" href="${t.url}" target="_blank" rel="noopener">Detail ↗</a>` : ''}</td>`).join('');
+
+  modal.innerHTML = `
+    <div class="modal-content">
+      <button class="btn btn-ghost" id="closeCompare" style="float:right">✕</button>
+      <h3>Porovnanie zájazdov</h3>
+      <div class="cmp-scroll">
+        <table class="cmp-table">
+          <thead><tr><th></th>${head}</tr></thead>
+          <tbody>${body}<tr><th class="cmp-label"></th>${foot}</tr></tbody>
+        </table>
+      </div>
+    </div>`;
+  overlay.hidden = false;
+  document.getElementById('closeCompare').addEventListener('click', () => { overlay.hidden = true; });
 }
 
 // =========================================================================
@@ -699,14 +796,16 @@ function openModal(tour, score) {
         <span class="tc-price">${priceBlock(tour)}</span>
         <span class="modal-actions">
           <button class="btn btn-ghost btn-icon" id="shareBtn" title="Skopírovať odkaz na tento zájazd">🔗</button>
-          <a class="btn btn-ghost" href="${mailto}">Spýtať sa na zájazd</a>
+          <a class="btn btn-ghost" id="askBtn" href="${mailto}">Spýtať sa na zájazd</a>
           ${tour.url ? `<a class="btn btn-primary" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
         </span>
       </div>
     </div>`;
   overlay.hidden = false;
+  track('Detail zájazdu', { nazov: tour.title });
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('shareBtn').addEventListener('click', () => shareTour(tour));
+  document.getElementById('askBtn').addEventListener('click', () => track('Spýtať sa', { nazov: tour.title }));
   // deep-link (#6)
   try { history.replaceState(null, '', `#zajazd=${encodeURIComponent(tour.id)}`); } catch (_) {}
 }
@@ -810,7 +909,19 @@ function bind() {
   });
 
   document.getElementById('modalOverlay').addEventListener('click', (e) => { if (e.target.id === 'modalOverlay') closeModal(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  // porovnanie
+  document.getElementById('compareClear').addEventListener('click', clearCompare);
+  document.getElementById('compareOpen').addEventListener('click', openCompare);
+  document.getElementById('compareOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'compareOverlay') document.getElementById('compareOverlay').hidden = true;
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    closeModal();
+    document.getElementById('compareOverlay').hidden = true;
+  });
 }
 
 (async function init() {
@@ -823,5 +934,9 @@ function bind() {
   } catch (e) {
     document.getElementById('feedBadge').textContent = 'chyba načítania';
     console.error(e);
+  }
+  // PWA – service worker (pridať na plochu + offline)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 })();

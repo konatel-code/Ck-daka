@@ -260,6 +260,37 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
 #dealsSection { margin-top: 26px; }
 
 /* =========================================================================
+   POROVNANIE
+   ========================================================================= */
+.tc-foot-actions { display: flex; align-items: center; gap: 8px; }
+.cmp-toggle {
+  border: 2px solid var(--line); background: #fff; border-radius: 10px;
+  padding: 6px 9px; cursor: pointer; font-size: 1rem; line-height: 1; transition: all .12s ease;
+}
+.cmp-toggle:hover { border-color: var(--brand); }
+.cmp-toggle.on { background: var(--accent); border-color: var(--accent); filter: saturate(1.1); }
+
+.compare-bar {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; z-index: 40;
+  background: var(--brand); color: #fff; border-radius: 999px;
+  padding: 10px 14px 10px 22px; display: flex; align-items: center; gap: 18px;
+  box-shadow: 0 12px 34px rgba(0,0,0,.28);
+}
+.compare-info { font-weight: 800; }
+.compare-bar-actions { display: flex; gap: 8px; }
+.compare-bar .btn-ghost { color: #fff; border-color: rgba(255,255,255,.5); }
+.compare-bar .btn-ghost:hover { background: rgba(255,255,255,.14); border-color: #fff; }
+.compare-bar .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+.compare-modal { max-width: 1000px; }
+.cmp-scroll { overflow-x: auto; margin-top: 8px; }
+.cmp-table { width: 100%; border-collapse: collapse; min-width: 480px; }
+.cmp-table th, .cmp-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: center; vertical-align: middle; font-weight: 700; }
+.cmp-table thead th img { width: 100%; max-width: 170px; aspect-ratio: 3/2; object-fit: cover; border-radius: 10px; display: block; margin: 0 auto; }
+.cmp-title { font-family: 'Baloo 2'; font-size: .92rem; margin-top: 6px; font-weight: 700; }
+.cmp-label { text-align: left; color: var(--muted); white-space: nowrap; background: var(--brand-light); }
+
+/* =========================================================================
    MOBILNÁ OPTIMALIZÁCIA
    ========================================================================= */
 @media (max-width: 640px) {
@@ -288,4 +319,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
   .modal-foot { flex-direction: column; align-items: stretch; }
   .modal-actions { justify-content: space-between; }
   .modal-actions .btn { padding: 10px 12px; font-size: .9rem; }
+
+  /* porovnanie na mobile */
+  .compare-bar { left: 12px; right: 12px; transform: none; justify-content: space-between; gap: 10px; padding: 10px 12px 10px 16px; }
+  .compare-info { font-size: .9rem; }
 }
