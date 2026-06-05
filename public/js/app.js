@@ -12,9 +12,13 @@ const state = {
   compare: [],      // ID zájazdov vybraných na porovnanie
 };
 
-// anonymná analytika (Plausible) – bezpečný wrapper, funguje aj keď skript nie je načítaný
+// anonymná analytika (GoatCounter) – bezpečný wrapper, funguje aj keď skript nie je načítaný
 function track(event, props) {
-  try { if (window.plausible) window.plausible(event, props ? { props } : undefined); } catch (_) {}
+  try {
+    if (!window.goatcounter || typeof window.goatcounter.count !== 'function') return;
+    const detail = props ? ' (' + Object.values(props).join(', ') + ')' : '';
+    window.goatcounter.count({ path: 'event/' + event, title: event + detail, event: true });
+  } catch (_) {}
 }
 
 // ── REGIÓNY (mapovanie odpovede na krajiny / typ) ───────────────────────────
@@ -53,11 +57,6 @@ const STEPS = [
       { value: 'domace', label: 'Doma a blízko', emoji: '🏡' },
       { value: '', label: 'Je mi to jedno', emoji: '🧭' },
     ],
-  },
-  {
-    key: 'destination', weight: 18, title: 'Máš vysnívanú destináciu?',
-    hint: 'Začni písať krajinu alebo miesto – alebo nechaj prázdne a poradíme my.',
-    type: 'search',
   },
   {
     key: 'who', weight: 8, title: 'S kým vyrážaš?',
@@ -192,6 +191,14 @@ function placeOf(tour) {
   return [...new Set([tour.destination, tour.region, tour.country].filter(Boolean))].join(', ');
 }
 function nocSlovo(n) { return n === 1 ? 'noc' : (n >= 2 && n <= 4 ? 'noci' : 'nocí'); }
+function dniSlovo(n) { return n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'); }
+// počet dní z počtu nocí (deň = noc + 1; 0 nocí = jednodňový zájazd)
+function daysText(nights) {
+  if (nights == null) return '';
+  if (nights === 0) return '1 deň';
+  const d = nights + 1;
+  return `${d} ${dniSlovo(d)}`;
+}
 function fmtPrice(p) { return Number(p).toLocaleString('sk-SK'); }
 
 // HTML blok ceny: prečiarknutá pôvodná cena (ak je zľava) + cena "od X €".
@@ -705,7 +712,7 @@ function openCompare() {
     ['Typ', (t) => TYPE_LABELS[t.type] || '—'],
     ['Miesto', (t) => escapeHtml(placeOf(t)) || '—'],
     ['Doprava', (t) => (TRANSPORT_LABELS[t.transport] || '—')],
-    ['Dĺžka', (t) => (t.nights == null ? '—' : t.nights === 0 ? '1 deň' : `${t.nights} ${nocSlovo(t.nights)}`)],
+    ['Dĺžka', (t) => (t.nights == null ? '—' : daysText(t.nights))],
     ['Strava', (t) => (t.board || '—')],
     ['Najbližší termín', (t) => (t.dateFrom ? fmtDate(t.dateFrom) : '—')],
     ['Počet termínov', (t) => (t.termsCount || '—')],
@@ -751,7 +758,7 @@ function openModal(tour, score) {
   const chips = [];
   if (tour.type) chips.push(TYPE_LABELS[tour.type] || tour.type);
   if (tour.transport && TRANSPORT_LABELS[tour.transport]) chips.push(TRANSPORT_LABELS[tour.transport]);
-  if (tour.nights != null) chips.push(tour.nights === 0 ? '🗓️ 1 deň' : `🌙 ${tour.nights} ${nocSlovo(tour.nights)}`);
+  if (tour.nights != null) chips.push(`🗓️ ${daysText(tour.nights)}`);
   if (tour.board) chips.push(`🍽️ ${tour.board}`);
   if (tour.accommodation) chips.push(`🏨 ${tour.accommodation}`);
   if (tour.discount && tour.discount > 0) chips.push(`🔖 zľava −${tour.discount}%`);
@@ -762,10 +769,10 @@ function openModal(tour, score) {
   if (terms.length) {
     const rows = terms.map((t) => {
       const range = (t.from && t.to && t.from !== t.to) ? `${fmtDate(t.from)} – ${fmtDate(t.to)}` : fmtDate(t.from || t.to);
-      const nights = t.nights ? ` · ${t.nights} ${nocSlovo(t.nights)}` : '';
+      const days = (t.nights != null) ? ` · ${daysText(t.nights)}` : '';
       const orig = (t.orig && t.orig > t.price) ? `<s class="tc-orig">${fmtPrice(t.orig)} €</s> ` : '';
       const disc = (t.discount && t.discount > 0) ? ` <span class="term-disc">−${t.discount}%</span>` : '';
-      return `<li class="term-row"><span>📅 ${range}${nights}</span><span class="term-price">${orig}${fmtPrice(t.price)} €${disc}</span></li>`;
+      return `<li class="term-row"><span>📅 ${range}${days}</span><span class="term-price">${orig}${fmtPrice(t.price)} €${disc}</span></li>`;
     }).join('');
     termsHtml = `<div class="terms-cal"><h4>Dostupné termíny (${terms.length})</h4><ul class="term-list">${rows}</ul></div>`;
   }
