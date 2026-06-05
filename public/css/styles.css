@@ -315,6 +315,11 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
   .topbar { padding: 10px 14px; }
   .brand-img { height: 34px; }
 
+  /* detail na mobile: okno rastie prirodzene, roluje celý prekryv (nič sa neoreže) */
+  .modal-overlay { align-items: flex-start; padding: 8px; overflow-y: auto; }
+  .modal { max-height: none; }
+  .modal-content { padding: 18px 18px 22px; }
+
   /* detail: cena nad tlačidlami, tlačidlá ostávajú v jednom riadku */
   .modal-foot { flex-direction: column; align-items: stretch; }
   .modal-actions { justify-content: space-between; }
