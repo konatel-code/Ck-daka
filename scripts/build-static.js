@@ -13,6 +13,8 @@ const OUT = join(ROOT, '_site');
 const FEED_URL = process.env.DAKA_FEED_URL || 'https://www.ckdaka.sk/export/xml';
 // V produkcii (workflow) nechceme nikdy nasadiť ukážkové dáta – radšej build padne.
 const REQUIRE_LIVE = process.env.REQUIRE_LIVE === '1';
+// záloha posledných úspešne stiahnutých dát (commitovaná v repozitári)
+const LAST_GOOD = join(ROOT, 'data', 'last-good.xml');
 
 // prehliadačová hlavička – server feedu inak občas odmietne (403)
 const BROWSER_HEADERS = {
@@ -35,6 +37,11 @@ async function fetchOnce(timeoutMs) {
   }
 }
 
+async function readFileOrNull(path) {
+  try { return await readFile(path, 'utf8'); } catch { return null; }
+}
+
+// Zdroj dát v poradí: 1) živý feed → 2) posledná dobrá záloha → 3) pád/sample
 async function getXml() {
   const attempts = 6;
   let lastErr;
@@ -49,11 +56,20 @@ async function getXml() {
       if (i < attempts) await new Promise((r) => setTimeout(r, Math.min(i * 4000, 16000)));
     }
   }
+
+  // 2) záloha posledných úspešne stiahnutých dát
+  const backup = await readFileOrNull(LAST_GOOD);
+  if (backup) {
+    console.warn('⚠ Živý feed nedostupný – použijem zálohu (posledná dobrá ponuka).');
+    return { xml: backup, source: 'backup', error: String(lastErr?.message || lastErr) };
+  }
+
+  // 3) žiadna záloha – v produkcii radšej padni, inak ukážka
   if (REQUIRE_LIVE) {
-    throw new Error(`Živý feed sa nepodarilo stiahnuť (${lastErr?.message || lastErr}). ` +
+    throw new Error(`Živý feed sa nepodarilo stiahnuť (${lastErr?.message || lastErr}) a neexistuje záloha. ` +
       'Build zámerne padá, aby sa nenasadili ukážkové dáta (REQUIRE_LIVE=1).');
   }
-  console.warn('⚠ Živý feed nedostupný – použijem ukážkové dáta.');
+  console.warn('⚠ Živý feed ani záloha nie sú dostupné – použijem ukážkové dáta.');
   const xml = await readFile(join(ROOT, 'data', 'sample.xml'), 'utf8');
   return { xml, source: 'sample', error: String(lastErr?.message || lastErr) };
 }
@@ -61,6 +77,12 @@ async function getXml() {
 const { xml, source, error } = await getXml();
 const tours = normalizeFeed(xml);
 const facets = buildFacets(tours);
+
+// po úspešnom živom stiahnutí ulož zálohu (commitne ju workflow)
+if (source === 'live') {
+  await writeFile(LAST_GOOD, xml);
+  console.log('✓ Záloha dát aktualizovaná → data/last-good.xml');
+}
 
 await mkdir(OUT, { recursive: true });
 await cp(join(ROOT, 'public'), OUT, { recursive: true });
