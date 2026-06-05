@@ -12,9 +12,13 @@ const state = {
   compare: [],      // ID zájazdov vybraných na porovnanie
 };
 
-// anonymná analytika (Plausible) – bezpečný wrapper, funguje aj keď skript nie je načítaný
+// anonymná analytika (GoatCounter) – bezpečný wrapper, funguje aj keď skript nie je načítaný
 function track(event, props) {
-  try { if (window.plausible) window.plausible(event, props ? { props } : undefined); } catch (_) {}
+  try {
+    if (!window.goatcounter || typeof window.goatcounter.count !== 'function') return;
+    const detail = props ? ' (' + Object.values(props).join(', ') + ')' : '';
+    window.goatcounter.count({ path: 'event/' + event, title: event + detail, event: true });
+  } catch (_) {}
 }
 
 // ── REGIÓNY (mapovanie odpovede na krajiny / typ) ───────────────────────────
@@ -53,11 +57,6 @@ const STEPS = [
       { value: 'domace', label: 'Doma a blízko', emoji: '🏡' },
       { value: '', label: 'Je mi to jedno', emoji: '🧭' },
     ],
-  },
-  {
-    key: 'destination', weight: 18, title: 'Máš vysnívanú destináciu?',
-    hint: 'Začni písať krajinu alebo miesto – alebo nechaj prázdne a poradíme my.',
-    type: 'search',
   },
   {
     key: 'who', weight: 8, title: 'S kým vyrážaš?',
