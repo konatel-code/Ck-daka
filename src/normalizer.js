@@ -113,8 +113,17 @@ function parseDaysFromTitle(title) {
   for (const [k, v] of Object.entries(DAY_WORDS)) if (d.includes(k)) return v;
   return null;
 }
-// počet dní: prednostne z názvu, inak z hotelových nocí (noci + 1)
-function computeDays(title, nights) {
+// počet dní z rozsahu dátumov termínu (od–do, vrátane oboch dní)
+function spanDays(dateFrom, dateTo) {
+  if (!dateFrom || !dateTo) return null;
+  const sp = Math.round((new Date(dateTo) - new Date(dateFrom)) / 86400000) + 1;
+  return sp >= 1 && sp <= 60 ? sp : null;
+}
+// počet dní: 1) rozsah dátumov termínu (najspoľahlivejšie, zodpovedá "X DNÍ")
+//            2) počet dní z názvu  3) hotelové noci + 1
+function computeDays(title, nights, dateFrom, dateTo) {
+  const sp = spanDays(dateFrom, dateTo);
+  if (sp != null) return sp;
   const t = parseDaysFromTitle(title);
   if (t != null) return t;
   if (nights == null) return null;
@@ -193,7 +202,7 @@ function normalizeShopItem(item) {
     dateTo,
     month,
     nights,
-    days: computeDays(title, nights),
+    days: computeDays(title, nights, dateFrom, dateTo),
     termsCount: dates.length,
     terms,
     transport: deriveTransport(hay),
@@ -273,7 +282,7 @@ function normalizeTourGeneric(raw) {
     price: toNumber(priceRaw), originalPrice: null, discount: null, priceFrom: false,
     priceText: priceRaw, currency: pick(raw, ['mena', 'currency']) || 'EUR',
     dateFrom, dateTo, month: dateFrom ? parseInt(dateFrom.slice(5, 7), 10) : null,
-    nights: nights || null, days: computeDays(title, nights || null), termsCount: dateFrom ? 1 : 0,
+    nights: nights || null, days: computeDays(title, nights || null, dateFrom, dateTo), termsCount: dateFrom ? 1 : 0,
     terms: [],
     transport: deriveTransport(norm(transportRaw) + ' ' + hay), transportRaw,
     board: board || deriveBoard(hay), accommodation,
