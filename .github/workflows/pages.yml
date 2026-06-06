@@ -6,9 +6,13 @@ on:
       - main
   workflow_dispatch:
   schedule:
-    # automatická denná aktualizácia ponuky (03:00 UTC ≈ 04:00/05:00 SEČ)
-    # Pozn.: plánované spustenie beží len z predvolenej vetvy (main).
-    - cron: "0 3 * * *"
+    # Viac pokusov denne – feed CK DAKA býva občas chvíľu nedostupný,
+    # stačí keď jeden z pokusov stiahne čerstvé dáta (časy v UTC).
+    - cron: "0 4 * * *"
+    - cron: "0 8 * * *"
+    - cron: "0 12 * * *"
+    - cron: "0 16 * * *"
+    - cron: "0 20 * * *"
 
 permissions:
   contents: write
