@@ -6,6 +6,7 @@ import { readFile, writeFile, cp, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { normalizeFeed, buildFacets } from '../src/normalizer.js';
+import { renderDealsCards, renderDirectory, homeJsonLd, tourPage, sitemap, robots } from './seo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -100,15 +101,40 @@ await writeFile(join(OUT, 'tours.json'), JSON.stringify(
 // .nojekyll, aby GitHub Pages nepreskakoval súbory
 await writeFile(join(OUT, '.nojekyll'), '');
 
-// cache-busting: ku každému buildu pripneme verziu k CSS/JS, aby prehliadač
-// po novej dennej aktualizácii vždy načítal čerstvé súbory (nie staré z cache).
+// základná adresa pre kanonické URL, sitemap a OG (produkčná doména)
+const BASE_URL = (process.env.SITE_URL || 'https://vyber.ckdaka.sk').replace(/\/$/, '');
 const stamp = Date.now();
+
+// ── úvodná stránka: predgenerovaný obsah pre vyhľadávače + cache-busting ─────
 const idxPath = join(OUT, 'index.html');
 let html = await readFile(idxPath, 'utf8');
 html = html
+  // reálne karty akcií (crawler aj AI hneď vidia obsah, nie prázdnu stránku)
+  .replace('<div class="cards-grid" id="dealsGrid"></div>',
+    `<div class="cards-grid" id="dealsGrid">${renderDealsCards(tours)}</div>`)
+  // adresár všetkých zájazdov (interné odkazy na ich stránky)
+  .replace('</main>', `${renderDirectory(tours)}\n  </main>`)
+  // štruktúrované dáta (schema.org)
+  .replace('</head>', `${homeJsonLd(BASE_URL)}\n</head>`)
+  // cache-busting CSS/JS
   .replace('css/styles.css', `css/styles.css?v=${stamp}`)
   .replace('js/app.js', `js/app.js?v=${stamp}`)
   .replace('assets/favicon.png', `assets/favicon.png?v=${stamp}`);
 await writeFile(idxPath, html);
 
+// ── samostatná statická stránka pre každý zájazd ────────────────────────────
+let pages = 0;
+for (const t of tours) {
+  const dir = join(OUT, 'zajazd', String(t.id));
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, 'index.html'), tourPage(t, BASE_URL, stamp));
+  pages++;
+}
+
+// ── sitemap.xml + robots.txt ────────────────────────────────────────────────
+const lastmod = new Date(stamp).toISOString().slice(0, 10);
+await writeFile(join(OUT, 'sitemap.xml'), sitemap(tours, BASE_URL, lastmod));
+await writeFile(join(OUT, 'robots.txt'), robots(BASE_URL));
+
 console.log(`✓ Statický build hotový: ${tours.length} zájazdov (zdroj: ${source}) → _site/`);
+console.log(`✓ SEO: ${pages} stránok zájazdov + sitemap.xml + robots.txt (${BASE_URL})`);
