@@ -19,6 +19,15 @@ const parser = new XMLParser({
 function deburr(s) { return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, ''); }
 function norm(s) { return deburr(s).toLowerCase().trim(); }
 
+// URL slug z názvu (bez diakritiky), pre pekné SEO adresy /zajazd/<id>-<slug>/
+function slugify(s) {
+  return deburr(String(s ?? '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
+}
+function makeSlug(id, title) {
+  const base = slugify(title).slice(0, 60).replace(/-+$/, '');
+  return base ? `${id}-${base}` : String(id);
+}
+
 function textOf(v) {
   if (v == null) return '';
   if (typeof v === 'string' || typeof v === 'number') return String(v).trim();
@@ -191,9 +200,13 @@ function normalizeShopItem(item) {
   let type = deriveTypeFromCategory(catHay) || deriveType(hay);
   if (type === 'ine') type = guessTypeByCountry(place) || 'ine';
 
+  const id = textOf(item.ITEM_ID) || textOf(item.PRODUCTNO) || `auto-${++_autoId}`;
+  const fullTitle = title || place || 'Zájazd CK DAKA';
+
   return {
-    id: textOf(item.ITEM_ID) || textOf(item.PRODUCTNO) || `auto-${++_autoId}`,
-    title: title || place || 'Zájazd CK DAKA',
+    id,
+    slug: makeSlug(id, fullTitle),
+    title: fullTitle,
     country: place,
     destination: place,
     region: '',
@@ -280,9 +293,12 @@ function normalizeTourGeneric(raw) {
   }
   const hay = norm([title, country, destination, description, typeRaw, accommodation].join(' '));
 
+  const gId = pick(raw, ['id', 'kod', 'code']) || `auto-${++_autoId}`;
+  const gTitle = title || destination || country || 'Zájazd CK DAKA';
   return {
-    id: pick(raw, ['id', 'kod', 'code']) || `auto-${++_autoId}`,
-    title: title || destination || country || 'Zájazd CK DAKA',
+    id: gId,
+    slug: makeSlug(gId, gTitle),
+    title: gTitle,
     country, destination, region: '',
     price: toNumber(priceRaw), originalPrice: null, discount: null, priceFrom: false,
     priceText: priceRaw, currency: pick(raw, ['mena', 'currency']) || 'EUR',

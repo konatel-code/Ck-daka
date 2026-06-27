@@ -45,8 +45,9 @@ function jsonLd(obj) {
   return `<script type="application/ld+json">${JSON.stringify(obj).replace(/</g, '\\u003c')}</script>`;
 }
 function imgOf(t) { return t.image || `https://picsum.photos/seed/${encodeURIComponent(t.id)}/640/420`; }
-function tourPath(id) { return `zajazd/${encodeURIComponent(String(id))}/`; }
-function tourUrl(base, id) { return `${base}/zajazd/${encodeURIComponent(String(id))}/`; }
+function slugOf(t) { return t.slug || String(t.id); }
+function tourPath(t) { return `zajazd/${slugOf(t)}/`; }       // relatívna cesta (od koreňa)
+function tourUrl(base, t) { return `${base}/zajazd/${slugOf(t)}/`; } // absolútna URL
 
 // ── predgenerované karty akcií (rovnaký výber ako appka) ─────────────────────
 function dealCard(t) {
@@ -55,7 +56,7 @@ function dealCard(t) {
   if (lenLabel(t)) meta.push(`🗓️ ${lenLabel(t)}`);
   if (t.board) meta.push(`🍽️ ${escapeHtml(t.board)}`);
   if (t.discount > 0) meta.push(`🔖 −${t.discount}%`);
-  return `<a class="tour-card card" href="${tourPath(t.id)}">
+  return `<a class="tour-card card" href="${tourPath(t)}">
       <div class="tc-img"><img class="tc-thumb" src="${escapeHtml(imgOf(t))}" alt="${escapeHtml(t.title)}" loading="lazy" />
         <span class="tc-type">${TYPE_LABELS[t.type] || '🧳 Zájazd'}</span></div>
       <div class="tc-body">
@@ -78,7 +79,7 @@ export function renderDealsCards(tours) {
 export function renderDirectory(tours) {
   const items = [...tours].sort((a, b) => a.title.localeCompare(b.title, 'sk')).map((t) => {
     const price = typeof t.price === 'number' ? ` – od ${fmtPrice(t.price)} €` : '';
-    return `<li><a href="${tourPath(t.id)}">${escapeHtml(t.title)}</a><span class="dir-meta"> · ${escapeHtml(placeOf(t))}${price}</span></li>`;
+    return `<li><a href="${tourPath(t)}">${escapeHtml(t.title)}</a><span class="dir-meta"> · ${escapeHtml(placeOf(t))}${price}</span></li>`;
   }).join('');
   return `<section class="all-index">
       <details><summary>📋 Zoznam všetkých zájazdov (${tours.length})</summary>
@@ -108,7 +109,7 @@ export function homeJsonLd(base) {
 
 // ── samostatná stránka jedného zájazdu ───────────────────────────────────────
 export function tourPage(t, base, stamp) {
-  const url = tourUrl(base, t.id);
+  const url = tourUrl(base, t);
   const img = imgOf(t);
   const place = placeOf(t);
   const desc = stripText(t.description) ||
@@ -224,7 +225,7 @@ export function sitemap(tours, base, lastmod) {
   const urls = [
     `  <url><loc>${base}/</loc><lastmod>${lastmod}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
     ...tours.map((t) =>
-      `  <url><loc>${tourUrl(base, t.id)}</loc><lastmod>${lastmod}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`),
+      `  <url><loc>${tourUrl(base, t)}</loc><lastmod>${lastmod}</lastmod><changefreq>daily</changefreq><priority>0.8</priority></url>`),
   ].join('\n');
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -237,5 +238,20 @@ export function robots(base) {
 Allow: /
 
 Sitemap: ${base}/sitemap.xml
+`;
+}
+
+// presmerovanie zo starej /zajazd/<id>/ na peknú /zajazd/<id>-<slug>/ (stabilný odkaz)
+export function redirectPage(t, base) {
+  const target = tourUrl(base, t);     // absolútna kanonická URL
+  const rel = `../${slugOf(t)}/`;      // relatívna z /zajazd/<id>/
+  return `<!DOCTYPE html>
+<html lang="sk"><head><meta charset="UTF-8" />
+<title>Presmerovanie…</title>
+<link rel="canonical" href="${target}" />
+<meta name="robots" content="noindex,follow" />
+<meta http-equiv="refresh" content="0; url=${rel}" />
+<script>location.replace(${JSON.stringify(rel)});</script>
+</head><body>Presmerúvame na <a href="${rel}">${escapeHtml(t.title)}</a>…</body></html>
 `;
 }

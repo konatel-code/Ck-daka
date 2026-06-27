@@ -6,7 +6,7 @@ import { readFile, writeFile, cp, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { normalizeFeed, buildFacets } from '../src/normalizer.js';
-import { renderDealsCards, renderDirectory, homeJsonLd, tourPage, sitemap, robots } from './seo.js';
+import { renderDealsCards, renderDirectory, homeJsonLd, tourPage, sitemap, robots, redirectPage } from './seo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -122,13 +122,20 @@ html = html
   .replace('assets/favicon.png', `assets/favicon.png?v=${stamp}`);
 await writeFile(idxPath, html);
 
-// ── samostatná statická stránka pre každý zájazd ────────────────────────────
+// ── samostatná statická stránka pre každý zájazd (pekná URL so slugom) ──────
 let pages = 0;
 for (const t of tours) {
-  const dir = join(OUT, 'zajazd', String(t.id));
+  const slug = t.slug || String(t.id);
+  const dir = join(OUT, 'zajazd', slug);
   await mkdir(dir, { recursive: true });
   await writeFile(join(dir, 'index.html'), tourPage(t, BASE_URL, stamp));
   pages++;
+  // presmerovanie zo starej /zajazd/<id>/ na novú slug URL (stabilný odkaz)
+  if (slug !== String(t.id)) {
+    const idDir = join(OUT, 'zajazd', String(t.id));
+    await mkdir(idDir, { recursive: true });
+    await writeFile(join(idDir, 'index.html'), redirectPage(t, BASE_URL));
+  }
 }
 
 // ── sitemap.xml + robots.txt ────────────────────────────────────────────────
