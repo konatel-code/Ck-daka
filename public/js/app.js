@@ -823,7 +823,11 @@ function closeModal() {
 }
 
 async function shareTour(tour) {
-  const url = `${location.origin}${location.pathname}#zajazd=${encodeURIComponent(tour.id)}`;
+  // zdieľame samostatnú stránku zájazdu (má vlastný náhľad pre FB/WhatsApp)
+  const path = `zajazd/${tour.slug || tour.id}/`;
+  let url;
+  try { url = new URL(path, location.href.replace(/#.*$/, '')).href; }
+  catch (_) { url = `${location.origin}/${path}`; }
   const data = { title: tour.title, text: `${tour.title} – CK DAKA`, url };
   try {
     if (navigator.share) { await navigator.share(data); return; }
