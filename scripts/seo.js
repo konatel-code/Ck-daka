@@ -69,7 +69,7 @@ function tourCard(t, up = '') {
   if (t.board) meta.push(`🍽️ ${escapeHtml(t.board)}`);
   if (t.discount > 0) meta.push(`🔖 −${t.discount}%`);
   return `<a class="tour-card card" href="${up}${tourPath(t)}">
-      <div class="tc-img"><img class="tc-thumb" src="${escapeHtml(imgOf(t))}" alt="${escapeHtml(t.title)}" loading="lazy" />
+      <div class="tc-img"><img class="tc-thumb" src="${escapeHtml(imgOf(t))}" alt="${escapeHtml(t.title)}" width="640" height="400" loading="lazy" decoding="async" />
         <span class="tc-type">${TYPE_LABELS[t.type] || '🧳 Zájazd'}</span></div>
       <div class="tc-body">
         <div class="tc-title">${escapeHtml(t.title)}</div>
@@ -202,6 +202,7 @@ export function tourPage(t, base, stamp, related = []) {
   <meta property="og:url" content="${url}" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://cestovnakancelariadaka.sk" />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../../css/styles.css?v=${stamp}" />
   <script data-goatcounter="https://ckdaka.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
@@ -217,7 +218,7 @@ export function tourPage(t, base, stamp, related = []) {
 
   <main class="tourpage">
     <nav class="crumbs"><a href="../../">Domov</a> › ${t.country ? `<a href="../../${destPath(t.country)}">${escapeHtml(t.country)}</a> › ` : ''}<span>${escapeHtml(t.title)}</span></nav>
-    <img class="tourpage-img" src="${escapeHtml(img)}" alt="${escapeHtml(t.title)}" />
+    <img class="tourpage-img" src="${escapeHtml(img)}" alt="${escapeHtml(t.title)}" width="1200" height="675" fetchpriority="high" decoding="async" />
     <h1>${escapeHtml(t.title)}</h1>
     <p class="tc-place">📍 ${escapeHtml(place) || '—'}</p>
     <div class="modal-row">${chips.map((c) => `<span class="chip">${escapeHtml(String(c))}</span>`).join('')}</div>
@@ -361,6 +362,7 @@ function landingPage(o) {
   <meta property="og:image" content="${o.base}/assets/og-banner.png" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://cestovnakancelariadaka.sk" />
   <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="${o.up}css/styles.css?v=${o.stamp}" />
   <script data-goatcounter="https://ckdaka.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
