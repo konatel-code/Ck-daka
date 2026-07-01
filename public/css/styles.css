@@ -314,6 +314,23 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
 .all-index-list a:hover { text-decoration: underline; }
 .dir-meta { color: var(--muted); font-weight: 600; }
 
+/* rozcestníky (landing stránky) a homepage prehľad */
+.landingpage { max-width: 1120px; }
+.landing-intro { color: #334b61; margin: 8px 0 22px; font-size: 1.05rem; max-width: 760px; }
+.related { margin-top: 34px; }
+.related h2 { font-size: 1.4rem; margin-bottom: 14px; }
+.hub-links { margin-top: 14px; color: var(--muted); font-weight: 700; }
+.hub-links a, .hubs-cols a { color: var(--brand); text-decoration: none; font-weight: 700; }
+.hub-links a:hover, .hubs-cols a:hover { text-decoration: underline; }
+
+.hubs { max-width: 1120px; margin: 30px auto 0; padding: 0 20px; }
+.hubs h2 { font-size: 1.5rem; margin-bottom: 14px; }
+.hubs-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; }
+.hubs-cols h3 { font-family: 'Baloo 2'; color: var(--brand); font-size: 1.05rem; margin-bottom: 8px; }
+.hubs-cols ul { list-style: none; font-size: .95rem; }
+.hubs-cols li { margin-bottom: 7px; }
+.hubs-dest ul { columns: 2; column-gap: 22px; }
+
 /* =========================================================================
    MOBILNÁ OPTIMALIZÁCIA
    ========================================================================= */
@@ -356,4 +373,5 @@ input[type=range] { width: 100%; accent-color: var(--accent); height: 8px; }
   /* statické stránky na mobile */
   .tourpage h1 { font-size: 1.5rem; }
   .all-index-list { columns: 1; }
+  .hubs-dest ul { columns: 1; }
 }
