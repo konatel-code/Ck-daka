@@ -6,7 +6,7 @@ import { readFile, writeFile, cp, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { normalizeFeed, buildFacets } from '../src/normalizer.js';
-import { renderDealsCards, renderDirectory, homeJsonLd, tourPage, sitemap, robots, redirectPage } from './seo.js';
+import { renderDealsCards, renderDirectory, homeJsonLd, tourPage, sitemap, robots, redirectPage, buildLandingPages, relatedFor } from './seo.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..');
@@ -105,6 +105,9 @@ await writeFile(join(OUT, '.nojekyll'), '');
 const BASE_URL = (process.env.SITE_URL || 'https://vyber.ckdaka.sk').replace(/\/$/, '');
 const stamp = Date.now();
 
+// ── rozcestníky (destinácie, typy, doprava, akcie) + homepage prehľad ───────
+const { pages: landingPages, sitemapPaths, hubsHtml } = buildLandingPages(tours, BASE_URL, stamp);
+
 // ── úvodná stránka: predgenerovaný obsah pre vyhľadávače + cache-busting ─────
 const idxPath = join(OUT, 'index.html');
 let html = await readFile(idxPath, 'utf8');
@@ -112,8 +115,8 @@ html = html
   // reálne karty akcií (crawler aj AI hneď vidia obsah, nie prázdnu stránku)
   .replace('<div class="cards-grid" id="dealsGrid"></div>',
     `<div class="cards-grid" id="dealsGrid">${renderDealsCards(tours)}</div>`)
-  // adresár všetkých zájazdov (interné odkazy na ich stránky)
-  .replace('</main>', `${renderDirectory(tours)}\n  </main>`)
+  // prehľad ponuky (rozcestníky) + adresár všetkých zájazdov
+  .replace('</main>', `${hubsHtml}\n${renderDirectory(tours)}\n  </main>`)
   // štruktúrované dáta (schema.org)
   .replace('</head>', `${homeJsonLd(BASE_URL)}\n</head>`)
   // cache-busting CSS/JS
@@ -128,7 +131,7 @@ for (const t of tours) {
   const slug = t.slug || String(t.id);
   const dir = join(OUT, 'zajazd', slug);
   await mkdir(dir, { recursive: true });
-  await writeFile(join(dir, 'index.html'), tourPage(t, BASE_URL, stamp));
+  await writeFile(join(dir, 'index.html'), tourPage(t, BASE_URL, stamp, relatedFor(t, tours, 4)));
   pages++;
   // presmerovanie zo starej /zajazd/<id>/ na novú slug URL (stabilný odkaz)
   if (slug !== String(t.id)) {
@@ -138,10 +141,17 @@ for (const t of tours) {
   }
 }
 
+// ── zápis landing stránok ───────────────────────────────────────────────────
+for (const p of landingPages) {
+  const dir = join(OUT, p.path);
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, 'index.html'), p.html);
+}
+
 // ── sitemap.xml + robots.txt ────────────────────────────────────────────────
 const lastmod = new Date(stamp).toISOString().slice(0, 10);
-await writeFile(join(OUT, 'sitemap.xml'), sitemap(tours, BASE_URL, lastmod));
+await writeFile(join(OUT, 'sitemap.xml'), sitemap(tours, BASE_URL, lastmod, sitemapPaths));
 await writeFile(join(OUT, 'robots.txt'), robots(BASE_URL));
 
 console.log(`✓ Statický build hotový: ${tours.length} zájazdov (zdroj: ${source}) → _site/`);
-console.log(`✓ SEO: ${pages} stránok zájazdov + sitemap.xml + robots.txt (${BASE_URL})`);
+console.log(`✓ SEO: ${pages} stránok zájazdov + ${landingPages.length} rozcestníkov + sitemap + robots (${BASE_URL})`);
