@@ -141,11 +141,13 @@ export function tourPage(t, base, stamp) {
     t.url ? `Odkaz: ${t.url}` : '', '', 'Prosím o viac informácií. Ďakujem.'].filter(Boolean);
   const mailto = `mailto:info@ckdaka.sk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body.join('\n'))}`;
 
+  // TouristTrip = správny typ pre zájazd (nie 'Product' → žiadne e-shopové
+  // požiadavky ako doprava, vrátenie, recenzie/hodnotenia).
   const productLd = jsonLd({
-    '@context': 'https://schema.org', '@type': 'Product',
+    '@context': 'https://schema.org', '@type': 'TouristTrip',
     name: t.title, image: [img], description: desc,
-    category: TYPE_CATEGORY[t.type] || 'Zájazd',
-    brand: { '@type': 'Organization', name: 'CK DAKA' },
+    touristType: TYPE_CATEGORY[t.type] || 'Zájazd',
+    provider: { '@type': 'TravelAgency', name: 'CK DAKA', url: base },
     ...(typeof t.price === 'number' ? {
       offers: {
         '@type': 'Offer', url, priceCurrency: t.currency || 'EUR', price: t.price,
@@ -172,7 +174,7 @@ export function tourPage(t, base, stamp) {
   <link rel="canonical" href="${url}" />
   <link rel="icon" type="image/png" href="../../assets/favicon.png" />
   <meta name="theme-color" content="#243660" />
-  <meta property="og:type" content="product" />
+  <meta property="og:type" content="website" />
   <meta property="og:title" content="${escapeHtml(t.title)} | CK DAKA" />
   <meta property="og:description" content="${escapeHtml(metaDesc)}" />
   <meta property="og:image" content="${escapeHtml(img)}" />
