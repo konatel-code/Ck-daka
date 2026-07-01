@@ -269,6 +269,54 @@ function minPriceTxt(list) {
   const ps = list.map((t) => t.price).filter((p) => typeof p === 'number');
   return ps.length ? ` od ${fmtPrice(Math.min(...ps))} €` : '';
 }
+function minPrice(list) {
+  const ps = list.map((t) => t.price).filter((p) => typeof p === 'number');
+  return ps.length ? Math.min(...ps) : null;
+}
+// top N hodnôt podľa počtu výskytov (napr. najčastejšie krajiny/typy)
+function topBy(list, kf, labelFn, n = 3) {
+  const c = {};
+  for (const t of list) { const k = kf(t); if (!k) continue; c[k] = (c[k] || 0) + 1; }
+  return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k]) => labelFn(k));
+}
+function nearestDate(list) {
+  const ds = list.map((t) => t.dateFrom).filter(Boolean).sort();
+  return ds.length ? ds[0] : null;
+}
+function joinSk(arr) {
+  if (arr.length <= 1) return arr.join('');
+  return arr.slice(0, -1).join(', ') + ' a ' + arr[arr.length - 1];
+}
+// bohatší, unikátny úvodný text pre rozcestník (viac obsahu = lepší ranking)
+function richIntro(kind, name, list) {
+  const n = list.length;
+  const mp = minPrice(list);
+  const priceP = mp != null ? ` už od ${fmtPrice(mp)} €` : '';
+  const nd = nearestDate(list);
+  const nearP = nd ? ` Najbližšie odchody už od ${fmtDate(nd)}.` : '';
+  const types = topBy(list, (t) => t.type, (k) => (TYPE_CATEGORY[k] || '').toLowerCase(), 3).filter(Boolean);
+  const trans = topBy(list, (t) => t.transport, (k) => (TRANSPORT_HUB[k] || '').toLowerCase(), 2).filter(Boolean);
+  const countries = topBy(list, (t) => t.country, (k) => k, 4).filter(Boolean);
+  const zajazdovSlovo = (n >= 2 && n <= 4) ? 'zájazdy' : 'zájazdov';
+
+  if (kind === 'dest') {
+    const kinds = types.length ? ` Na výber: ${joinSk(types)}.` : '';
+    const tr = trans.length ? ` Doprava: ${joinSk(trans)}.` : '';
+    return `V ponuke cestovnej kancelárie CK DAKA nájdete ${n} ${zajazdovSlovo} do destinácie ${name}${priceP}.${kinds}${tr}${nearP} Vyberte si termín a cenu, ktorá vám sadne, a rezervujte jednoducho online.`;
+  }
+  if (kind === 'type') {
+    const dest = countries.length ? ` Obľúbené destinácie: ${joinSk(countries)}.` : '';
+    return `${name} z aktuálnej ponuky CK DAKA – ${n} ${zajazdovSlovo}${priceP}.${dest}${nearP} Porovnajte ceny aj termíny a vyberte si ten pravý zájazd.`;
+  }
+  if (kind === 'transport') {
+    const dest = countries.length ? ` Najčastejšie smerujú do: ${joinSk(countries)}.` : '';
+    return `${name} od CK DAKA – ${n} ${zajazdovSlovo}${priceP}.${dest}${nearP} Nájdite si dovolenku podľa termínu a rozpočtu.`;
+  }
+  // akcie
+  const maxDisc = Math.max(0, ...list.map((t) => t.discount || 0));
+  const dest = countries.length ? ` Akcie nájdete napríklad do: ${joinSk(countries)}.` : '';
+  return `Zľavnené a last minute zájazdy CK DAKA – ${n} ponúk so zľavou až do −${maxDisc}%${priceP}.${dest} Ceny a dostupnosť sa menia denne, tak neváhajte dlho.`;
+}
 function hubList(items) {
   return items.sort((a, b) => a.label.localeCompare(b.label, 'sk'))
     .map((i) => `<li><a href="${i.path}">${escapeHtml(i.label)}</a> <span class="dir-meta">(${i.n})</span></li>`).join('');
@@ -354,7 +402,7 @@ export function buildLandingPages(tours, base, stamp) {
       heading: `Zájazdy – ${country}`, crumbLabel: country,
       metaTitle: `${country} – zájazdy a dovolenky | CK DAKA`,
       metaDesc: `Vyberte si z ${list.length} zájazdov do destinácie ${country}${minPriceTxt(list)}. Ceny, termíny aj akcie na jednom mieste – CK DAKA.`,
-      intro: `Prehľad zájazdov do destinácie ${country} z aktuálnej ponuky CK DAKA. Vyberte si podľa termínu, ceny a typu dovolenky.`,
+      intro: richIntro('dest', country, list),
     }, list);
     destItems.push({ label: country, path: p, n: list.length });
   }
@@ -364,7 +412,7 @@ export function buildLandingPages(tours, base, stamp) {
     add(p, '../../', {
       heading: label, crumbLabel: label, metaTitle: `${label} | CK DAKA`,
       metaDesc: `${label} z ponuky CK DAKA – ${list.length} zájazdov${minPriceTxt(list)}. Vyberte si termín a cenu.`,
-      intro: `Prehľad: ${label.toLowerCase()} z aktuálnej ponuky CK DAKA.`,
+      intro: richIntro('type', label, list),
     }, list);
     typeItems.push({ label, path: p, n: list.length });
   }
@@ -374,7 +422,7 @@ export function buildLandingPages(tours, base, stamp) {
     add(p, '../../', {
       heading: label, crumbLabel: label, metaTitle: `${label} | CK DAKA`,
       metaDesc: `${label} – ${list.length} zájazdov z ponuky CK DAKA${minPriceTxt(list)}.`,
-      intro: `Prehľad: ${label.toLowerCase()} z aktuálnej ponuky CK DAKA.`,
+      intro: richIntro('transport', label, list),
     }, list);
     transItems.push({ label, path: p, n: list.length });
   }
@@ -383,7 +431,7 @@ export function buildLandingPages(tours, base, stamp) {
     heading: 'Akcie a last minute', crumbLabel: 'Akcie',
     metaTitle: 'Akcie a last minute zájazdy | CK DAKA',
     metaDesc: `Najväčšie zľavy a last minute zájazdy CK DAKA – ${akcie.length} akciových ponúk.`,
-    intro: 'Zájazdy s najväčšou zľavou z aktuálnej ponuky CK DAKA.',
+    intro: richIntro('akcie', 'Akcie', akcie),
   }, akcie);
 
   return { pages, sitemapPaths, hubsHtml: renderHubs(destItems, typeItems, transItems, akcie.length) };

@@ -190,6 +190,30 @@ function hashId(s) {
 function placeOf(tour) {
   return [...new Set([tour.destination, tour.region, tour.country].filter(Boolean))].join(', ');
 }
+
+// podobné zájazdy (rovnaká krajina, potom typ) – pre okno detailu
+function relatedTours(tour, n = 4) {
+  const others = state.tours.filter((x) => String(x.id) !== String(tour.id));
+  const sameCountry = others.filter((x) => x.country && x.country === tour.country);
+  const sameType = others.filter((x) => x.type === tour.type && !(x.country && x.country === tour.country));
+  const seen = new Set(); const res = [];
+  for (const x of [...sameCountry, ...sameType]) {
+    if (seen.has(x.id)) continue;
+    seen.add(x.id); res.push(x);
+    if (res.length >= n) break;
+  }
+  return res;
+}
+function relatedCardHtml(t) {
+  const img = t.image || `https://picsum.photos/seed/${encodeURIComponent(t.id)}/240/160`;
+  const price = typeof t.price === 'number' ? `${t.priceFrom ? 'od ' : ''}${fmtPrice(t.price)} €` : '';
+  const place = t.country || t.destination || '';
+  return `<button class="rel-card" data-id="${escapeHtml(String(t.id))}">
+      <img src="${escapeHtml(img)}" alt="" loading="lazy" />
+      <span class="rel-title">${escapeHtml(t.title)}</span>
+      <span class="rel-meta">📍 ${escapeHtml(place)}${price ? ' · ' + price : ''}</span>
+    </button>`;
+}
 function dniSlovo(n) { return n === 1 ? 'deň' : (n >= 2 && n <= 4 ? 'dni' : 'dní'); }
 // trvanie zájazdu v dňoch – z poľa days (z názvu, inak hotelové noci + 1).
 // Fallback na noci+1 zaistí trvanie aj pri staršej zálohe bez poľa days.
@@ -787,6 +811,11 @@ function openModal(tour, score) {
   ].filter(Boolean);
   const mailto = `mailto:info@ckdaka.sk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyLines.join('\n'))}`;
 
+  const related = relatedTours(tour, 4);
+  const relatedHtml = related.length
+    ? `<section class="modal-related"><h4>Podobné zájazdy</h4><div class="rel-row">${related.map(relatedCardHtml).join('')}</div></section>`
+    : '';
+
   modal.innerHTML = `
     <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" />
     <div class="modal-content">
@@ -805,12 +834,18 @@ function openModal(tour, score) {
           ${tour.url ? `<a class="btn btn-primary" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
         </span>
       </div>
+      ${relatedHtml}
     </div>`;
   overlay.hidden = false;
+  overlay.scrollTop = 0; modal.scrollTop = 0;
   track('Detail zájazdu', { nazov: tour.title });
   document.getElementById('closeModal').addEventListener('click', closeModal);
   document.getElementById('shareBtn').addEventListener('click', () => shareTour(tour));
   document.getElementById('askBtn').addEventListener('click', () => track('Spýtať sa', { nazov: tour.title }));
+  modal.querySelectorAll('.rel-card').forEach((el) => el.addEventListener('click', () => {
+    const rt = state.tours.find((x) => String(x.id) === el.dataset.id);
+    if (rt) { track('Podobný zájazd', { nazov: rt.title }); openModal(rt, null); }
+  }));
   // deep-link (#6)
   try { history.replaceState(null, '', `#zajazd=${encodeURIComponent(tour.id)}`); } catch (_) {}
 }
