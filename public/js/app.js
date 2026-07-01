@@ -644,6 +644,9 @@ function plural(n) { return n === 1 ? 'zájazd' : (n >= 2 && n <= 4 ? 'zájazdy'
 function renderCard(tour, score) {
   const el = document.createElement('article');
   el.className = 'tour-card card';
+  el.setAttribute('role', 'button');
+  el.tabIndex = 0;
+  el.setAttribute('aria-label', `${tour.title} – zobraziť detail`);
   const img = tour.image || `https://picsum.photos/seed/${encodeURIComponent(tour.id)}/640/420`;
   const priceHtml = priceBlock(tour);
   const matchBadge = score != null ? `<span class="tc-match">${score}% zhoda</span>` : '';
@@ -656,7 +659,7 @@ function renderCard(tour, score) {
 
   el.innerHTML = `
     <div class="tc-img">
-      <img class="tc-thumb" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" decoding="async" />
+      <img class="tc-thumb" src="${img}" alt="${escapeHtml(tour.title)}" width="640" height="400" loading="lazy" decoding="async" />
       ${matchBadge}
       <span class="tc-type">${TYPE_LABELS[tour.type] || '🧳 Zájazd'}</span>
     </div>
@@ -677,9 +680,13 @@ function renderCard(tour, score) {
     e.stopPropagation();
     toggleCompare(tour.id);
   });
-  el.addEventListener('click', () => {
+  const activate = () => {
     if (Date.now() < cardClickGuardUntil) return; // ignoruj „ghost click" po výsledkoch
     openModal(tour, score);
+  };
+  el.addEventListener('click', activate);
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
   });
   return el;
 }
@@ -770,9 +777,12 @@ function openCompare() {
 // =========================================================================
 //  DETAIL (modálne okno)
 // =========================================================================
+let lastFocused = null;
 function openModal(tour, score) {
   const overlay = document.getElementById('modalOverlay');
   const modal = document.getElementById('modal');
+  if (overlay.hidden) lastFocused = document.activeElement; // zapamätaj, odkiaľ sme prišli
+  modal.setAttribute('aria-label', tour.title);
   const img = tour.image || `https://picsum.photos/seed/${encodeURIComponent(tour.id)}/800/450`;
   const term = (tour.dateFrom && tour.dateTo && tour.dateFrom !== tour.dateTo)
     ? `${fmtDate(tour.dateFrom)} – ${fmtDate(tour.dateTo)}`
@@ -819,7 +829,7 @@ function openModal(tour, score) {
   modal.innerHTML = `
     <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" />
     <div class="modal-content">
-      <button class="btn btn-ghost" id="closeModal" style="float:right">✕</button>
+      <button class="btn btn-ghost" id="closeModal" style="float:right" aria-label="Zavrieť">✕</button>
       ${score != null ? `<span class="tc-match" style="position:static;display:inline-block;margin-bottom:8px">${score}% zhoda s tvojím zadaním</span>` : ''}
       <h3>${escapeHtml(tour.title)}</h3>
       <div class="tc-place">📍 ${escapeHtml(placeOf(tour)) || '—'}</div>
@@ -829,7 +839,7 @@ function openModal(tour, score) {
       <div class="modal-foot">
         <span class="tc-price">${priceBlock(tour)}</span>
         <span class="modal-actions">
-          <button class="btn btn-ghost btn-icon" id="shareBtn" title="Skopírovať odkaz na tento zájazd">🔗</button>
+          <button class="btn btn-ghost btn-icon" id="shareBtn" title="Skopírovať odkaz na tento zájazd" aria-label="Zdieľať zájazd">🔗</button>
           <a class="btn btn-ghost" id="askBtn" href="${mailto}">Spýtať sa na zájazd</a>
           ${tour.url ? `<a class="btn btn-primary" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
         </span>
@@ -838,8 +848,11 @@ function openModal(tour, score) {
     </div>`;
   overlay.hidden = false;
   overlay.scrollTop = 0; modal.scrollTop = 0;
+  const closeBtn = document.getElementById('closeModal');
+  closeBtn.focus();                 // presuň fókus do okna (a11y)
+  trapFocus(modal);
   track('Detail zájazdu', { nazov: tour.title });
-  document.getElementById('closeModal').addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
   document.getElementById('shareBtn').addEventListener('click', () => shareTour(tour));
   document.getElementById('askBtn').addEventListener('click', () => track('Spýtať sa', { nazov: tour.title }));
   modal.querySelectorAll('.rel-card').forEach((el) => el.addEventListener('click', () => {
@@ -855,6 +868,20 @@ function closeModal() {
   if (location.hash.startsWith('#zajazd=')) {
     try { history.replaceState(null, '', location.pathname + location.search); } catch (_) {}
   }
+  if (lastFocused && lastFocused.focus) { try { lastFocused.focus(); } catch (_) {} lastFocused = null; }
+}
+
+// jednoduchý focus trap – Tab cykluje len v rámci daného kontajnera (a11y)
+function trapFocus(container) {
+  const sel = 'a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])';
+  container.onkeydown = (e) => {
+    if (e.key !== 'Tab') return;
+    const items = [...container.querySelectorAll(sel)].filter((el) => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0], last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  };
 }
 
 async function shareTour(tour) {
