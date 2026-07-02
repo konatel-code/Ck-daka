@@ -2,7 +2,7 @@
 // Vygeneruje tours.json (v CI sa pokúsi stiahnuť reálny feed, inak vzorka)
 // a skopíruje obsah public/ do výstupného priečinka (_site).
 
-import { readFile, writeFile, cp, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, cp, mkdir, rm } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { normalizeFeed, buildFacets } from '../src/normalizer.js';
@@ -63,8 +63,12 @@ async function readBackupTours() {
   } catch { return null; }
 }
 
+// SKIP_LIVE=1 preskočí sťahovanie feedu a rovno použije zálohu/ukážku – vhodné
+// pre rýchly, deterministický build (napr. Lighthouse kontrola v CI).
+const SKIP_LIVE = process.env.SKIP_LIVE === '1';
+
 // Zdroj dát v poradí: 1) živý feed → 2) posledná dobrá záloha → 3) pád/ukážka
-const live = await tryLive();
+const live = SKIP_LIVE ? { xml: null, error: 'preskočené (SKIP_LIVE=1)' } : await tryLive();
 let tours, source, error = live.error;
 
 if (live.xml) {
@@ -94,6 +98,9 @@ if (source === 'live') {
   console.log(`✓ Záloha dát aktualizovaná → data/last-good.json (${tours.length} zájazdov)`);
 }
 
+// vyčisti výstup, aby v ňom nezostali staré stránky zájazdov, ktoré už nie sú
+// v ponuke (inak by lingerovali neaktuálne stránky z predošlého buildu)
+await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 await cp(join(ROOT, 'public'), OUT, { recursive: true });
 await writeFile(join(OUT, 'tours.json'), JSON.stringify(

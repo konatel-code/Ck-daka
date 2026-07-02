@@ -45,6 +45,7 @@ jobs:
           REQUIRE_LIVE: "1"
 
       - name: Ulož zálohu dát do repozitára (ak sa zmenila)
+        id: backup
         if: github.ref == 'refs/heads/main'
         continue-on-error: true
         run: |
@@ -54,9 +55,20 @@ jobs:
             git add data/last-good.json
             git commit -m "chore: aktualizácia zálohy dát [skip ci]"
             git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "Záloha sa nezmenila – netreba commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: IndexNow – oznámenie vyhľadávačom (Bing, Seznam, Yandex)
+        # Pri merge/dispatch vždy; pri dennom crone len keď sa dáta naozaj zmenili
+        # (nepingujeme zbytočne 5× denne rovnaký zoznam).
+        if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || steps.backup.outputs.changed == 'true')
+        continue-on-error: true
+        run: node scripts/indexnow.js
+        env:
+          SITE_URL: "https://vyber.ckdaka.sk"
 
       - name: Konfigurácia Pages
         # Pozn.: Pages treba v repozitári raz manuálne zapnúť

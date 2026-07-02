@@ -21,6 +21,14 @@ function track(event, props) {
   } catch (_) {}
 }
 
+// responzívne obrázky cez wsrv.nl (menší obrázok pre mobil); originál ostáva
+// ako `src` fallback – onerror sa naň vráti, ak by resizer zlyhal.
+function wsrv(url, w) { return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${w}&we&q=82`; }
+function imgAttrs(url, widths, sizes) {
+  const srcset = widths.map((w) => `${wsrv(url, w)} ${w}w`).join(', ');
+  return `srcset="${escapeHtml(srcset)}" sizes="${escapeHtml(sizes)}" onerror="this.onerror=null;this.removeAttribute('srcset');this.src=this.src"`;
+}
+
 // ── REGIÓNY (mapovanie odpovede na krajiny / typ) ───────────────────────────
 const REGION_COUNTRIES = {
   stredomorie: ['grecko', 'taliansko', 'spanielsko', 'turecko', 'chorvatsko', 'bulharsko',
@@ -451,6 +459,7 @@ function showHome() {
 }
 
 function startQuiz() {
+  track('Sprievodca spustený');
   state.mode = 'quiz';
   state.step = 0;
   state.answers = {};
@@ -659,7 +668,7 @@ function renderCard(tour, score) {
 
   el.innerHTML = `
     <div class="tc-img">
-      <img class="tc-thumb" src="${img}" alt="${escapeHtml(tour.title)}" width="640" height="400" loading="lazy" decoding="async" />
+      <img class="tc-thumb" src="${img}" ${imgAttrs(img, [320, 480, 640], '(max-width:700px) 90vw, 340px')} alt="${escapeHtml(tour.title)}" width="640" height="400" loading="lazy" decoding="async" />
       ${matchBadge}
       <span class="tc-type">${TYPE_LABELS[tour.type] || '🧳 Zájazd'}</span>
     </div>
@@ -757,7 +766,7 @@ function openCompare() {
     `<tr><th class="cmp-label">${label}</th>${tours.map((t) => `<td>${fn(t)}</td>`).join('')}</tr>`
   ).join('');
 
-  const foot = tours.map((t) => `<td>${t.url ? `<a class="btn btn-primary" style="padding:8px 14px;font-size:.88rem" href="${t.url}" target="_blank" rel="noopener">Detail ↗</a>` : ''}</td>`).join('');
+  const foot = tours.map((t) => `<td>${t.url ? `<a class="btn btn-primary" style="padding:8px 14px;font-size:.88rem" href="${t.url}" target="_blank" rel="noopener" onclick="track('Preklik na web',{zdroj:'porovnanie'})">Detail ↗</a>` : ''}</td>`).join('');
 
   modal.innerHTML = `
     <div class="modal-content">
@@ -827,7 +836,7 @@ function openModal(tour, score) {
     : '';
 
   modal.innerHTML = `
-    <img class="modal-img" src="${img}" alt="${escapeHtml(tour.title)}" loading="lazy" />
+    <img class="modal-img" src="${img}" ${imgAttrs(img, [480, 768, 1024], '(max-width:800px) 92vw, 760px')} alt="${escapeHtml(tour.title)}" loading="lazy" />
     <div class="modal-content">
       <button class="btn btn-ghost" id="closeModal" style="float:right" aria-label="Zavrieť">✕</button>
       ${score != null ? `<span class="tc-match" style="position:static;display:inline-block;margin-bottom:8px">${score}% zhoda s tvojím zadaním</span>` : ''}
@@ -841,7 +850,7 @@ function openModal(tour, score) {
         <span class="modal-actions">
           <button class="btn btn-ghost btn-icon" id="shareBtn" title="Skopírovať odkaz na tento zájazd" aria-label="Zdieľať zájazd">🔗</button>
           <a class="btn btn-ghost" id="askBtn" href="${mailto}">Spýtať sa na zájazd</a>
-          ${tour.url ? `<a class="btn btn-primary" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
+          ${tour.url ? `<a class="btn btn-primary" id="detailBtn" href="${tour.url}" target="_blank" rel="noopener">Detail zájazdu ↗</a>` : ''}
         </span>
       </div>
       ${relatedHtml}
@@ -855,6 +864,8 @@ function openModal(tour, score) {
   closeBtn.addEventListener('click', closeModal);
   document.getElementById('shareBtn').addEventListener('click', () => shareTour(tour));
   document.getElementById('askBtn').addEventListener('click', () => track('Spýtať sa', { nazov: tour.title }));
+  const detailBtn = document.getElementById('detailBtn');
+  if (detailBtn) detailBtn.addEventListener('click', () => track('Preklik na web', { nazov: tour.title }));
   modal.querySelectorAll('.rel-card').forEach((el) => el.addEventListener('click', () => {
     const rt = state.tours.find((x) => String(x.id) === el.dataset.id);
     if (rt) { track('Podobný zájazd', { nazov: rt.title }); openModal(rt, null); }
@@ -925,6 +936,7 @@ function fillSelect(id, values, labelFn) {
 }
 
 function browseAll() {
+  track('Prezerať všetky');
   state.mode = 'browse';
   document.getElementById('dealsSection').hidden = true;
   document.getElementById('wizard').hidden = true;

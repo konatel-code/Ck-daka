@@ -1,0 +1,35 @@
+name: Lighthouse (kvalita)
+
+# Automatická kontrola kvality úvodnej stránky pri každom PR (a manuálne).
+# Tvrdé brány: prístupnosť a SEO (musia byť ≥ 90). Výkon je len upozornenie
+# (na zdieľaných CI runneroch býva zaťaženie premenlivé).
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Inštalácia závislostí
+        run: npm ci
+
+      - name: Build statickej verzie (zo zálohy, bez čakania na feed)
+        run: npm run build:static
+        env:
+          SKIP_LIVE: "1"
+
+      - name: Lighthouse CI
+        run: npx --yes @lhci/cli@0.14.x autorun

@@ -46,6 +46,15 @@ function jsonLd(obj) {
 }
 function imgOf(t) { return t.image || `https://picsum.photos/seed/${encodeURIComponent(t.id)}/640/420`; }
 function slugOf(t) { return t.slug || String(t.id); }
+
+// responzívne obrázky cez wsrv.nl (bezplatný resizer) – na mobile sa stiahne
+// menší obrázok. Pôvodná URL ostáva ako `src` (spoľahlivý fallback); ak by wsrv
+// zlyhal, onerror odstráni srcset a načíta originál.
+function wsrv(url, w) { return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${w}&we&q=82`; }
+function respAttrs(url, widths, sizes) {
+  const srcset = widths.map((w) => `${wsrv(url, w)} ${w}w`).join(', ');
+  return `srcset="${escapeHtml(srcset)}" sizes="${escapeHtml(sizes)}" onerror="this.onerror=null;this.removeAttribute('srcset');this.src=this.src"`;
+}
 function slugify(s) {
   return String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-+|-+$)/g, '');
@@ -69,7 +78,7 @@ function tourCard(t, up = '') {
   if (t.board) meta.push(`🍽️ ${escapeHtml(t.board)}`);
   if (t.discount > 0) meta.push(`🔖 −${t.discount}%`);
   return `<a class="tour-card card" href="${up}${tourPath(t)}">
-      <div class="tc-img"><img class="tc-thumb" src="${escapeHtml(imgOf(t))}" alt="${escapeHtml(t.title)}" width="640" height="400" loading="lazy" decoding="async" />
+      <div class="tc-img"><img class="tc-thumb" src="${escapeHtml(imgOf(t))}" ${respAttrs(imgOf(t), [320, 480, 640], '(max-width:700px) 90vw, 340px')} alt="${escapeHtml(t.title)}" width="640" height="400" loading="lazy" decoding="async" />
         <span class="tc-type">${TYPE_LABELS[t.type] || '🧳 Zájazd'}</span></div>
       <div class="tc-body">
         <div class="tc-title">${escapeHtml(t.title)}</div>
@@ -201,9 +210,10 @@ export function tourPage(t, base, stamp, related = []) {
   <meta property="og:image" content="${escapeHtml(img)}" />
   <meta property="og:url" content="${url}" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://cestovnakancelariadaka.sk" />
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+  <link rel="preload" href="../../assets/fonts/nunito-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="../../assets/fonts/baloo2-800-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="../../css/styles.css?v=${stamp}" />
   <script data-goatcounter="https://ckdaka.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   ${productLd}
@@ -218,7 +228,7 @@ export function tourPage(t, base, stamp, related = []) {
 
   <main class="tourpage">
     <nav class="crumbs"><a href="../../">Domov</a> › ${t.country ? `<a href="../../${destPath(t.country)}">${escapeHtml(t.country)}</a> › ` : ''}<span>${escapeHtml(t.title)}</span></nav>
-    <img class="tourpage-img" src="${escapeHtml(img)}" alt="${escapeHtml(t.title)}" width="1200" height="675" fetchpriority="high" decoding="async" />
+    <img class="tourpage-img" src="${escapeHtml(img)}" ${respAttrs(img, [480, 768, 1200], '(max-width:1120px) 100vw, 1120px')} alt="${escapeHtml(t.title)}" width="1200" height="675" fetchpriority="high" decoding="async" />
     <h1>${escapeHtml(t.title)}</h1>
     <p class="tc-place">📍 ${escapeHtml(place) || '—'}</p>
     <div class="modal-row">${chips.map((c) => `<span class="chip">${escapeHtml(String(c))}</span>`).join('')}</div>
@@ -226,7 +236,7 @@ export function tourPage(t, base, stamp, related = []) {
     <p class="tourpage-desc">${escapeHtml(desc)}</p>
     ${terms ? `<h2>Dostupné termíny (${(t.terms || []).length})</h2><ul class="term-list">${terms}</ul>` : ''}
     <div class="tourpage-cta">
-      ${t.url ? `<a class="btn btn-primary btn-lg" href="${escapeHtml(t.url)}" target="_blank" rel="noopener">Detail a objednávka na ckdaka.sk ↗</a>` : ''}
+      ${t.url ? `<a class="btn btn-primary btn-lg" href="${escapeHtml(t.url)}" target="_blank" rel="noopener" onclick="window.goatcounter&&goatcounter.count({path:'event/Preklik na web',title:'Preklik na web (stránka zájazdu)',event:true})">Detail a objednávka na ckdaka.sk ↗</a>` : ''}
       <a class="btn btn-ghost" href="${mailto}">Spýtať sa na zájazd</a>
       <a class="btn btn-ghost" href="../../">Nájsť podobný zájazd 🧭</a>
     </div>
@@ -361,9 +371,10 @@ function landingPage(o) {
   <meta property="og:url" content="${o.canonical}" />
   <meta property="og:image" content="${o.base}/assets/og-banner.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://cestovnakancelariadaka.sk" />
-  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://wsrv.nl" crossorigin />
+  <link rel="preload" href="${o.up}assets/fonts/nunito-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="${o.up}assets/fonts/baloo2-800-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="${o.up}css/styles.css?v=${o.stamp}" />
   <script data-goatcounter="https://ckdaka.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   ${itemLd}
